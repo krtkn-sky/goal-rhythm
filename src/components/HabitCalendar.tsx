@@ -180,6 +180,56 @@ const HabitCalendar = ({
     onStreakDataChange?.(updatedStreakData);
   };
 
+  const getDayCompletionStatus = (dateString: string) => {
+    if (selectedHabits.length === 0) return 'none';
+    
+    const completedHabits = selectedHabits.filter(habit => 
+      getHabitStatusForDate(habit.id, dateString) === true
+    ).length;
+    
+    if (completedHabits === selectedHabits.length) return 'complete';
+    if (completedHabits > 0) return 'partial';
+    
+    const hasAnyData = selectedHabits.some(habit => 
+      getHabitStatusForDate(habit.id, dateString) !== undefined
+    );
+    
+    return hasAnyData ? 'missed' : 'none';
+  };
+
+  const renderDayIndicator = (status: string) => {
+    const baseStyle = "absolute top-1 left-1 w-4 h-4 flex items-center justify-center text-xs font-bold";
+    
+    switch (status) {
+      case 'complete':
+        return (
+          <div className={`${baseStyle} text-green-600`}>
+            <svg viewBox="0 0 16 16" className="w-full h-full" fill="currentColor">
+              <path d="M3 8l3 3 7-7" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+        );
+      case 'partial':
+        return (
+          <div className={`${baseStyle} text-yellow-500`}>
+            <svg viewBox="0 0 16 16" className="w-full h-full" fill="currentColor">
+              <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" fill="none"/>
+            </svg>
+          </div>
+        );
+      case 'missed':
+        return (
+          <div className={`${baseStyle} text-red-500`}>
+            <svg viewBox="0 0 16 16" className="w-full h-full" fill="currentColor">
+              <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round"/>
+            </svg>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   const navigateMonth = (direction: 'prev' | 'next') => {
     setCurrentDate(prev => {
       const newDate = new Date(prev);
@@ -209,6 +259,7 @@ const HabitCalendar = ({
       const today = new Date();
       const isToday = dateString === formatDate(today);
       const isFuture = date > today;
+      const dayStatus = getDayCompletionStatus(dateString);
 
       days.push(
         <div
@@ -226,6 +277,9 @@ const HabitCalendar = ({
           }`}>
             {day}
           </div>
+          
+          {/* Day completion indicator */}
+          {!isFuture && dayStatus !== 'none' && renderDayIndicator(dayStatus)}
           {/* Unified Dropdown for all habits */}
           {selectedHabits.length > 0 && !isFuture && (
             <DropdownMenu>

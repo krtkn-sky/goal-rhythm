@@ -259,23 +259,31 @@ const Dashboard = ({ habits = [], streakData = [], deletedHabits = [], onRestore
               <div className="text-center py-4 text-muted-foreground">
                 <p className="text-sm">Complete your first habit to unlock achievements!</p>
               </div>
-              
-              {/* Habit Recycler Button */}
-              <div className="mt-6 pt-4 border-t border-border">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowRecycler(true)}
-                  className="w-full flex items-center gap-2 text-left justify-start hover:bg-muted"
-                >
-                  <Trash2 className="w-4 h-4 text-muted-foreground" />
-                  <div className="flex-1">
-                    <div className="font-medium">Habit Recycler</div>
-                    <div className="text-sm text-muted-foreground">
-                      {deletedHabits.length} deleted habit{deletedHabits.length !== 1 ? 's' : ''} available to restore
-                    </div>
+            </CardContent>
+          </Card>
+        )}
+        
+        {/* Habit Recycler Section */}
+        {deletedHabits.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Trash2 className="w-5 h-5 text-muted-foreground" />
+                Habit Recycler
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Button 
+                variant="outline" 
+                onClick={() => setShowRecycler(true)}
+                className="w-full flex items-center gap-2 text-left justify-start hover:bg-muted"
+              >
+                <div className="flex-1">
+                  <div className="text-sm text-muted-foreground">
+                    {deletedHabits.length} deleted habit{deletedHabits.length !== 1 ? 's' : ''} available to restore
                   </div>
-                </Button>
-              </div>
+                </div>
+              </Button>
             </CardContent>
           </Card>
         )}
