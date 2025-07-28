@@ -5,13 +5,16 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ChevronLeft, ChevronRight, Calendar, Target, Plus } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { ChevronLeft, ChevronRight, Calendar, Target, Plus, X, ChevronDown, Check, Minus } from 'lucide-react';
 
 interface Habit {
   id: string;
   name: string;
   color: string;
   icon: string;
+  createdAt: string;
 }
 
 interface StreakData {
@@ -20,14 +23,28 @@ interface StreakData {
   completed: boolean;
 }
 
-const HabitCalendar = () => {
+interface DeletedHabit extends Habit {
+  deletedAt: string;
+  longestStreak: number;
+  totalDays: number;
+}
+
+interface HabitCalendarProps {
+  onHabitsChange?: (habits: Habit[]) => void;
+  onStreakDataChange?: (data: StreakData[]) => void;
+  onDeletedHabitsChange?: (deleted: DeletedHabit[]) => void;
+}
+
+const HabitCalendar = ({ onHabitsChange, onStreakDataChange, onDeletedHabitsChange }: HabitCalendarProps) => {
   const today = new Date();
   const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedHabits, setSelectedHabits] = useState<Habit[]>([]);
   const [streakData, setStreakData] = useState<StreakData[]>([]);
+  const [deletedHabits, setDeletedHabits] = useState<DeletedHabit[]>([]);
   const [isAddHabitOpen, setIsAddHabitOpen] = useState(false);
   const [newHabitName, setNewHabitName] = useState('');
   const [newHabitIcon, setNewHabitIcon] = useState('🎯');
+  const [habitToDelete, setHabitToDelete] = useState<string | null>(null);
 
   const habitIcons = ['🎯', '💪', '📚', '🧘', '🏃', '💧', '🍎', '😴', '✍️', '🎨'];
   const habitColors = ['bg-primary', 'bg-success', 'bg-accent', 'bg-warning'];
@@ -55,16 +72,74 @@ const HabitCalendar = () => {
         id: Date.now().toString(),
         name: newHabitName.trim(),
         color: habitColors[selectedHabits.length % habitColors.length],
-        icon: newHabitIcon
+        icon: newHabitIcon,
+        createdAt: new Date().toISOString()
       };
-      setSelectedHabits(prev => [...prev, newHabit]);
+      const updatedHabits = [...selectedHabits, newHabit];
+      setSelectedHabits(updatedHabits);
+      onHabitsChange?.(updatedHabits);
       setNewHabitName('');
       setNewHabitIcon('🎯');
       setIsAddHabitOpen(false);
     }
   };
 
-  const toggleHabitStatus = (habitId: string, date: string) => {
+  const calculateLongestStreak = (habitId: string): number => {
+    const habitEntries = streakData
+      .filter(d => d.habitId === habitId && d.completed)
+      .map(d => new Date(d.date))
+      .sort((a, b) => a.getTime() - b.getTime());
+
+    if (habitEntries.length === 0) return 0;
+
+    let longestStreak = 1;
+    let currentStreak = 1;
+
+    for (let i = 1; i < habitEntries.length; i++) {
+      const prevDate = habitEntries[i - 1];
+      const currentDate = habitEntries[i];
+      const daysDiff = Math.floor((currentDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24));
+
+      if (daysDiff === 1) {
+        currentStreak++;
+        longestStreak = Math.max(longestStreak, currentStreak);
+      } else {
+        currentStreak = 1;
+      }
+    }
+
+    return longestStreak;
+  };
+
+  const deleteHabit = (habitId: string) => {
+    const habitToDelete = selectedHabits.find(h => h.id === habitId);
+    if (!habitToDelete) return;
+
+    const longestStreak = calculateLongestStreak(habitId);
+    const totalDays = streakData.filter(d => d.habitId === habitId && d.completed).length;
+
+    const deletedHabit: DeletedHabit = {
+      ...habitToDelete,
+      deletedAt: new Date().toISOString(),
+      longestStreak,
+      totalDays
+    };
+
+    const updatedHabits = selectedHabits.filter(h => h.id !== habitId);
+    const updatedStreakData = streakData.filter(d => d.habitId !== habitId);
+    const updatedDeletedHabits = [...deletedHabits, deletedHabit];
+
+    setSelectedHabits(updatedHabits);
+    setStreakData(updatedStreakData);
+    setDeletedHabits(updatedDeletedHabits);
+    
+    onHabitsChange?.(updatedHabits);
+    onStreakDataChange?.(updatedStreakData);
+    onDeletedHabitsChange?.(updatedDeletedHabits);
+    setHabitToDelete(null);
+  };
+
+  const toggleHabitStatus = (habitId: string, date: string, completed: boolean) => {
     // Prevent marking future dates
     const selectedDate = new Date(date);
     const today = new Date();
@@ -73,18 +148,12 @@ const HabitCalendar = () => {
     if (selectedDate > today) {
       return; // Don't allow future dates
     }
-    setStreakData(prev => {
-      const existing = prev.find(d => d.habitId === habitId && d.date === date);
-      if (existing) {
-        return prev.map(d => 
-          d.habitId === habitId && d.date === date 
-            ? { ...d, completed: !d.completed }
-            : d
-        );
-      } else {
-        return [...prev, { habitId, date, completed: true }];
-      }
-    });
+
+    const updatedStreakData = streakData.filter(d => !(d.habitId === habitId && d.date === date));
+    updatedStreakData.push({ habitId, date, completed });
+    
+    setStreakData(updatedStreakData);
+    onStreakDataChange?.(updatedStreakData);
   };
 
   const navigateMonth = (direction: 'prev' | 'next') => {
@@ -133,27 +202,64 @@ const HabitCalendar = () => {
           }`}>
             {day}
           </div>
-          <div className="flex flex-wrap gap-0.5">
+          <div className="flex flex-wrap gap-2">
             {selectedHabits.map(habit => {
               const status = getHabitStatusForDate(habit.id, dateString);
               return (
-                <button
-                  key={habit.id}
-                  onClick={() => !isFuture && toggleHabitStatus(habit.id, dateString)}
-                  disabled={isFuture}
-                  className={`w-5 h-5 rounded-full text-xs flex items-center justify-center transition-all ${
-                    isFuture ? 'cursor-not-allowed opacity-30' : 'hover:scale-110'
-                  } ${
-                    status === true
-                      ? 'bg-gradient-success text-success-foreground shadow-sm'
-                      : status === false
-                      ? 'bg-destructive/20 text-destructive border border-destructive/40'
-                      : 'bg-muted border border-border hover:bg-muted-foreground/20'
-                  }`}
-                  title={`${habit.name} - ${status === true ? 'Completed' : status === false ? 'Missed' : 'Not tracked'}`}
-                >
-                  {status === true ? '✓' : status === false ? '✗' : '•'}
-                </button>
+                <DropdownMenu key={habit.id}>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      disabled={isFuture}
+                      className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-all ${
+                        isFuture ? 'cursor-not-allowed opacity-30' : 'hover:scale-105'
+                      } ${
+                        status === true
+                          ? 'bg-gradient-success text-success-foreground shadow-sm'
+                          : status === false
+                          ? 'bg-destructive/20 text-destructive border border-destructive/40'
+                          : 'bg-muted border border-border hover:bg-muted-foreground/20'
+                      }`}
+                      title={`${habit.name} - ${status === true ? 'Completed' : status === false ? 'Missed' : 'Not tracked'}`}
+                    >
+                      <span>{habit.icon}</span>
+                      {!isFuture && <ChevronDown className="w-3 h-3" />}
+                    </button>
+                  </DropdownMenuTrigger>
+                  {!isFuture && (
+                    <DropdownMenuContent className="w-48 bg-popover border border-border shadow-lg z-50">
+                      <DropdownMenuItem 
+                        onClick={() => toggleHabitStatus(habit.id, dateString, true)}
+                        className="flex items-center gap-2 cursor-pointer"
+                      >
+                        <Check className="w-4 h-4 text-success" />
+                        Mark as Completed
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => toggleHabitStatus(habit.id, dateString, false)}
+                        className="flex items-center gap-2 cursor-pointer"
+                      >
+                        <Minus className="w-4 h-4 text-destructive" />
+                        Mark as Missed
+                      </DropdownMenuItem>
+                      {status !== undefined && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => {
+                              const updatedData = streakData.filter(d => !(d.habitId === habit.id && d.date === dateString));
+                              setStreakData(updatedData);
+                              onStreakDataChange?.(updatedData);
+                            }}
+                            className="flex items-center gap-2 cursor-pointer"
+                          >
+                            <X className="w-4 h-4 text-muted-foreground" />
+                            Clear Status
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  )}
+                </DropdownMenu>
               );
             })}
           </div>
@@ -267,10 +373,19 @@ const HabitCalendar = () => {
           {selectedHabits.length > 0 ? (
             <div className="flex flex-wrap gap-2 mb-6">
               {selectedHabits.map(habit => (
-                <Badge key={habit.id} variant="secondary" className="text-sm">
-                  <span className="mr-1">{habit.icon}</span>
-                  {habit.name}
-                </Badge>
+                <div key={habit.id} className="relative">
+                  <Badge variant="secondary" className="text-sm pr-8">
+                    <span className="mr-1">{habit.icon}</span>
+                    {habit.name}
+                  </Badge>
+                  <button
+                    onClick={() => setHabitToDelete(habit.id)}
+                    className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-xs hover:scale-110 transition-transform"
+                    title="Delete habit"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
               ))}
             </div>
           ) : (
@@ -297,6 +412,27 @@ const HabitCalendar = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={habitToDelete !== null} onOpenChange={() => setHabitToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Habit?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this habit? It will be moved to the habit recycler where you can restore it later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No, Keep It</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => habitToDelete && deleteHabit(habitToDelete)}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Yes, Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -10,6 +10,7 @@ interface Habit {
   name: string;
   color: string;
   icon: string;
+  createdAt: string;
 }
 
 interface StreakData {
@@ -18,11 +19,22 @@ interface StreakData {
   completed: boolean;
 }
 
+interface DeletedHabit {
+  id: string;
+  name: string;
+  icon: string;
+  createdAt: string;
+  deletedAt: string;
+  longestStreak: number;
+  totalDays: number;
+}
+
 const Index = () => {
   const [activeTab, setActiveTab] = useState('calendar');
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [habits, setHabits] = useState<Habit[]>([]);
   const [streakData, setStreakData] = useState<StreakData[]>([]);
+  const [deletedHabits, setDeletedHabits] = useState<DeletedHabit[]>([]);
 
   // Initialize dark mode from localStorage
   useEffect(() => {
@@ -30,6 +42,26 @@ const Index = () => {
     setIsDarkMode(savedDarkMode);
     document.documentElement.classList.toggle('dark', savedDarkMode);
   }, []);
+
+  const restoreHabit = (deletedHabit: DeletedHabit) => {
+    // Remove from deleted habits
+    const updatedDeletedHabits = deletedHabits.filter(h => 
+      !(h.id === deletedHabit.id && h.deletedAt === deletedHabit.deletedAt)
+    );
+    setDeletedHabits(updatedDeletedHabits);
+
+    // Add back to active habits with new ID to avoid conflicts
+    const restoredHabit: Habit = {
+      id: Date.now().toString(), // New ID
+      name: deletedHabit.name,
+      color: 'bg-primary', // Default color since it's not in DeletedHabit interface
+      icon: deletedHabit.icon,
+      createdAt: new Date().toISOString() // New start date
+    };
+    
+    const updatedHabits = [...habits, restoredHabit];
+    setHabits(updatedHabits);
+  };
 
   const toggleDarkMode = () => {
     const newDarkMode = !isDarkMode;
@@ -88,11 +120,20 @@ const Index = () => {
           </TabsList>
 
           <TabsContent value="calendar" className="mt-0">
-            <HabitCalendar />
+            <HabitCalendar 
+              onHabitsChange={setHabits}
+              onStreakDataChange={setStreakData}
+              onDeletedHabitsChange={setDeletedHabits}
+            />
           </TabsContent>
 
           <TabsContent value="dashboard" className="mt-0">
-            <Dashboard habits={habits} streakData={streakData} />
+            <Dashboard 
+              habits={habits} 
+              streakData={streakData} 
+              deletedHabits={deletedHabits}
+              onRestoreHabit={restoreHabit}
+            />
           </TabsContent>
         </Tabs>
       </div>
