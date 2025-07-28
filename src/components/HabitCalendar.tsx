@@ -213,7 +213,7 @@ const HabitCalendar = ({
       days.push(
         <div
           key={day}
-          className={`h-20 border border-border/30 p-1 transition-colors ${
+          className={`h-20 border border-border/30 p-1 transition-colors relative ${
             isFuture 
               ? 'bg-muted/50 opacity-50 cursor-not-allowed' 
               : 'hover:bg-muted/50 cursor-pointer'
@@ -231,13 +231,11 @@ const HabitCalendar = ({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
-                  className="w-full h-8 text-xs"
+                  className="absolute top-1 right-1 w-6 h-6 p-0 opacity-60 hover:opacity-100"
                 >
-                  <List className="w-3 h-3 mr-1" />
-                  Track Habits
-                  <ChevronDown className="w-3 h-3 ml-1" />
+                  <List className="w-3 h-3" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-64 bg-popover border border-border shadow-lg z-50">
@@ -292,27 +290,6 @@ const HabitCalendar = ({
             </DropdownMenu>
           )}
           
-          {/* Habit Status Indicators */}
-          <div className="flex flex-wrap gap-1 mt-2">
-            {selectedHabits.map(habit => {
-              const status = getHabitStatusForDate(habit.id, dateString);
-              return (
-                <div
-                  key={habit.id}
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
-                    status === true
-                      ? 'bg-gradient-success text-success-foreground'
-                      : status === false
-                      ? 'bg-destructive/20 text-destructive border border-destructive/40'
-                      : 'bg-muted/30 border border-border'
-                  }`}
-                  title={`${habit.name} - ${status === true ? 'Completed' : status === false ? 'Missed' : 'Not tracked'}`}
-                >
-                  {habit.icon}
-                </div>
-              );
-            })}
-          </div>
         </div>
       );
     }

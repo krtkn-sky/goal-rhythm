@@ -232,10 +232,10 @@ const Dashboard = ({ habits = [], streakData = [], deletedHabits = [], onRestore
     );
   }
 
-  // Show empty state if no habits
-  if (habits.length === 0 && deletedHabits.length === 0) {
+  // Show dashboard with recycler option even when no habits
+  if (habits.length === 0) {
     return (
-      <div className="w-full max-w-6xl mx-auto p-6">
+      <div className="w-full max-w-6xl mx-auto p-6 space-y-6">
         <div className="text-center py-12">
           <div className="w-20 h-20 rounded-full bg-gradient-success/20 flex items-center justify-center mx-auto mb-6">
             <Target className="w-10 h-10 text-muted-foreground" />
@@ -245,6 +245,40 @@ const Dashboard = ({ habits = [], streakData = [], deletedHabits = [], onRestore
             Add your first habit to begin tracking your progress and building positive streaks.
           </p>
         </div>
+        
+        {/* Show recycler if there are deleted habits */}
+        {deletedHabits.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Award className="w-5 h-5 text-accent" />
+                Achievements
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-4 text-muted-foreground">
+                <p className="text-sm">Complete your first habit to unlock achievements!</p>
+              </div>
+              
+              {/* Habit Recycler Button */}
+              <div className="mt-6 pt-4 border-t border-border">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowRecycler(true)}
+                  className="w-full flex items-center gap-2 text-left justify-start hover:bg-muted"
+                >
+                  <Trash2 className="w-4 h-4 text-muted-foreground" />
+                  <div className="flex-1">
+                    <div className="font-medium">Habit Recycler</div>
+                    <div className="text-sm text-muted-foreground">
+                      {deletedHabits.length} deleted habit{deletedHabits.length !== 1 ? 's' : ''} available to restore
+                    </div>
+                  </div>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     );
   }
