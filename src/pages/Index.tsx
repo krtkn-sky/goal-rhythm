@@ -1,12 +1,42 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import HabitCalendar from '@/components/HabitCalendar';
 import Dashboard from '@/components/Dashboard';
-import { Calendar, BarChart3, User, Sparkles } from 'lucide-react';
+import { Calendar, BarChart3, User, Sparkles, Moon, Sun } from 'lucide-react';
+
+interface Habit {
+  id: string;
+  name: string;
+  color: string;
+  icon: string;
+}
+
+interface StreakData {
+  habitId: string;
+  date: string;
+  completed: boolean;
+}
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('calendar');
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [habits, setHabits] = useState<Habit[]>([]);
+  const [streakData, setStreakData] = useState<StreakData[]>([]);
+
+  // Initialize dark mode from localStorage
+  useEffect(() => {
+    const savedDarkMode = localStorage.getItem('darkMode') === 'true';
+    setIsDarkMode(savedDarkMode);
+    document.documentElement.classList.toggle('dark', savedDarkMode);
+  }, []);
+
+  const toggleDarkMode = () => {
+    const newDarkMode = !isDarkMode;
+    setIsDarkMode(newDarkMode);
+    localStorage.setItem('darkMode', newDarkMode.toString());
+    document.documentElement.classList.toggle('dark', newDarkMode);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
@@ -22,6 +52,18 @@ const Index = () => {
             </div>
             
             <div className="flex items-center gap-4">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={toggleDarkMode}
+                className="w-9 h-9 p-0"
+              >
+                {isDarkMode ? (
+                  <Sun className="w-4 h-4" />
+                ) : (
+                  <Moon className="w-4 h-4" />
+                )}
+              </Button>
               <Button variant="ghost" size="sm">
                 <User className="w-4 h-4 mr-2" />
                 Sign In
@@ -50,7 +92,7 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="dashboard" className="mt-0">
-            <Dashboard />
+            <Dashboard habits={habits} streakData={streakData} />
           </TabsContent>
         </Tabs>
       </div>

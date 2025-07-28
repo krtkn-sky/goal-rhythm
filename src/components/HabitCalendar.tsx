@@ -2,7 +2,10 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, ChevronRight, Calendar, Trophy, Target, Flame } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { ChevronLeft, ChevronRight, Calendar, Target, Plus } from 'lucide-react';
 
 interface Habit {
   id: string;
@@ -18,19 +21,16 @@ interface StreakData {
 }
 
 const HabitCalendar = () => {
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedHabits, setSelectedHabits] = useState<Habit[]>([
-    { id: '1', name: 'Gym Workout', color: 'bg-primary', icon: '💪' },
-    { id: '2', name: 'Read 30min', color: 'bg-accent', icon: '📚' },
-    { id: '3', name: 'Meditation', color: 'bg-success', icon: '🧘' },
-  ]);
+  const today = new Date();
+  const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
+  const [selectedHabits, setSelectedHabits] = useState<Habit[]>([]);
+  const [streakData, setStreakData] = useState<StreakData[]>([]);
+  const [isAddHabitOpen, setIsAddHabitOpen] = useState(false);
+  const [newHabitName, setNewHabitName] = useState('');
+  const [newHabitIcon, setNewHabitIcon] = useState('🎯');
 
-  const [streakData, setStreakData] = useState<StreakData[]>([
-    { habitId: '1', date: '2024-01-20', completed: true },
-    { habitId: '1', date: '2024-01-21', completed: true },
-    { habitId: '2', date: '2024-01-20', completed: true },
-    { habitId: '3', date: '2024-01-21', completed: false },
-  ]);
+  const habitIcons = ['🎯', '💪', '📚', '🧘', '🏃', '💧', '🍎', '😴', '✍️', '🎨'];
+  const habitColors = ['bg-primary', 'bg-success', 'bg-accent', 'bg-warning'];
 
   const getDaysInMonth = (date: Date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
@@ -49,7 +49,30 @@ const HabitCalendar = () => {
     return entry?.completed;
   };
 
+  const addNewHabit = () => {
+    if (newHabitName.trim()) {
+      const newHabit: Habit = {
+        id: Date.now().toString(),
+        name: newHabitName.trim(),
+        color: habitColors[selectedHabits.length % habitColors.length],
+        icon: newHabitIcon
+      };
+      setSelectedHabits(prev => [...prev, newHabit]);
+      setNewHabitName('');
+      setNewHabitIcon('🎯');
+      setIsAddHabitOpen(false);
+    }
+  };
+
   const toggleHabitStatus = (habitId: string, date: string) => {
+    // Prevent marking future dates
+    const selectedDate = new Date(date);
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // End of today
+    
+    if (selectedDate > today) {
+      return; // Don't allow future dates
+    }
     setStreakData(prev => {
       const existing = prev.find(d => d.habitId === habitId && d.date === date);
       if (existing) {
@@ -90,16 +113,24 @@ const HabitCalendar = () => {
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
       const dateString = formatDate(date);
-      const isToday = dateString === formatDate(new Date());
+      const today = new Date();
+      const isToday = dateString === formatDate(today);
+      const isFuture = date > today;
 
       days.push(
         <div
           key={day}
-          className={`h-20 border border-border/30 p-1 hover:bg-muted/50 transition-colors ${
+          className={`h-20 border border-border/30 p-1 transition-colors ${
+            isFuture 
+              ? 'bg-muted/50 opacity-50 cursor-not-allowed' 
+              : 'hover:bg-muted/50 cursor-pointer'
+          } ${
             isToday ? 'bg-gradient-subtle ring-2 ring-primary/20' : 'bg-card'
           }`}
         >
-          <div className={`text-sm font-medium mb-1 ${isToday ? 'text-primary' : 'text-foreground'}`}>
+          <div className={`text-sm font-medium mb-1 ${
+            isFuture ? 'text-muted-foreground' : isToday ? 'text-primary' : 'text-foreground'
+          }`}>
             {day}
           </div>
           <div className="flex flex-wrap gap-0.5">
@@ -108,8 +139,11 @@ const HabitCalendar = () => {
               return (
                 <button
                   key={habit.id}
-                  onClick={() => toggleHabitStatus(habit.id, dateString)}
-                  className={`w-5 h-5 rounded-full text-xs flex items-center justify-center transition-all hover:scale-110 ${
+                  onClick={() => !isFuture && toggleHabitStatus(habit.id, dateString)}
+                  disabled={isFuture}
+                  className={`w-5 h-5 rounded-full text-xs flex items-center justify-center transition-all ${
+                    isFuture ? 'cursor-not-allowed opacity-30' : 'hover:scale-110'
+                  } ${
                     status === true
                       ? 'bg-gradient-success text-success-foreground shadow-sm'
                       : status === false
@@ -150,10 +184,57 @@ const HabitCalendar = () => {
         </div>
         
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <Target className="w-4 h-4 mr-2" />
-            Add Habit
-          </Button>
+          <Dialog open={isAddHabitOpen} onOpenChange={setIsAddHabitOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Plus className="w-4 h-4 mr-2" />
+                Add Habit
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Add New Habit</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="habit-name">Habit Name</Label>
+                  <Input
+                    id="habit-name"
+                    value={newHabitName}
+                    onChange={(e) => setNewHabitName(e.target.value)}
+                    placeholder="e.g., Morning Exercise"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label>Choose Icon</Label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {habitIcons.map(icon => (
+                      <button
+                        key={icon}
+                        onClick={() => setNewHabitIcon(icon)}
+                        className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-all ${
+                          newHabitIcon === icon 
+                            ? 'bg-primary text-primary-foreground' 
+                            : 'bg-muted hover:bg-muted-foreground/20'
+                        }`}
+                      >
+                        {icon}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={addNewHabit} className="flex-1">
+                    Add Habit
+                  </Button>
+                  <Button variant="outline" onClick={() => setIsAddHabitOpen(false)}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -183,16 +264,25 @@ const HabitCalendar = () => {
         
         <CardContent>
           {/* Habits Legend */}
-          <div className="flex flex-wrap gap-2 mb-6">
-            {selectedHabits.map(habit => (
-              <Badge key={habit.id} variant="secondary" className="text-sm">
-                <span className="mr-1">{habit.icon}</span>
-                {habit.name}
-              </Badge>
-            ))}
-          </div>
+          {selectedHabits.length > 0 ? (
+            <div className="flex flex-wrap gap-2 mb-6">
+              {selectedHabits.map(habit => (
+                <Badge key={habit.id} variant="secondary" className="text-sm">
+                  <span className="mr-1">{habit.icon}</span>
+                  {habit.name}
+                </Badge>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <Target className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p className="text-lg mb-2">No habits yet!</p>
+              <p className="text-sm">Click "Add Habit" to start tracking your goals</p>
+            </div>
+          )}
 
           {/* Calendar Grid */}
+          {selectedHabits.length > 0 && (
           <div className="grid grid-cols-7 gap-0 border border-border rounded-lg overflow-hidden">
             {/* Day headers */}
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
@@ -204,6 +294,7 @@ const HabitCalendar = () => {
             {/* Calendar days */}
             {renderCalendarDays()}
           </div>
+          )}
         </CardContent>
       </Card>
     </div>

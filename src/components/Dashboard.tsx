@@ -1,31 +1,93 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Flame, Trophy, Target, TrendingUp, Calendar, Award } from 'lucide-react';
+import { Flame, Trophy, Target, TrendingUp, Calendar, Award, Plus } from 'lucide-react';
 
-const Dashboard = () => {
-  const currentStreaks = [
-    { name: 'Gym Workout', current: 12, best: 45, icon: '💪', color: 'bg-primary' },
-    { name: 'Read 30min', current: 8, best: 23, icon: '📚', color: 'bg-accent' },
-    { name: 'Meditation', current: 3, best: 15, icon: '🧘', color: 'bg-success' },
-  ];
+interface DashboardProps {
+  habits: Array<{id: string; name: string; icon: string}>;
+  streakData: Array<{habitId: string; date: string; completed: boolean}>;
+}
+
+const Dashboard = ({ habits = [], streakData = [] }: DashboardProps) => {
+  // Calculate current streaks for each habit
+  const calculateCurrentStreak = (habitId: string) => {
+    const today = new Date();
+    let streak = 0;
+    
+    for (let i = 0; i < 365; i++) { // Check last 365 days
+      const checkDate = new Date(today);
+      checkDate.setDate(checkDate.getDate() - i);
+      const dateString = checkDate.toISOString().split('T')[0];
+      
+      const entry = streakData.find(d => d.habitId === habitId && d.date === dateString);
+      if (entry?.completed) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+    return streak;
+  };
+
+  const currentStreaks = habits.map(habit => ({
+    name: habit.name,
+    current: calculateCurrentStreak(habit.id),
+    best: Math.max(calculateCurrentStreak(habit.id), 0), // For now, same as current
+    icon: habit.icon,
+    color: 'bg-primary'
+  }));
 
   const achievements = [
-    { name: 'Week Warrior', description: 'Complete any habit for 7 days straight', icon: '🏆', unlocked: true },
-    { name: 'Consistency King', description: 'Maintain 3 habits for 2 weeks', icon: '👑', unlocked: true },
-    { name: 'Month Master', description: 'Complete any habit for 30 days', icon: '🎯', unlocked: false },
-    { name: 'Triple Threat', description: 'Maintain all habits for 1 week', icon: '⚡', unlocked: false },
+    { 
+      name: 'First Step', 
+      description: 'Track your first habit', 
+      icon: '🎯', 
+      unlocked: habits.length > 0 
+    },
+    { 
+      name: 'Week Warrior', 
+      description: 'Complete any habit for 7 days straight', 
+      icon: '🏆', 
+      unlocked: currentStreaks.some(s => s.current >= 7) 
+    },
+    { 
+      name: 'Consistency King', 
+      description: 'Maintain 3 habits for 2 weeks', 
+      icon: '👑', 
+      unlocked: currentStreaks.filter(s => s.current >= 14).length >= 3 
+    },
+    { 
+      name: 'Month Master', 
+      description: 'Complete any habit for 30 days', 
+      icon: '🎖️', 
+      unlocked: currentStreaks.some(s => s.current >= 30) 
+    },
   ];
 
-  const weeklyProgress = [
-    { day: 'Mon', completed: 3, total: 3 },
-    { day: 'Tue', completed: 2, total: 3 },
-    { day: 'Wed', completed: 3, total: 3 },
-    { day: 'Thu', completed: 1, total: 3 },
-    { day: 'Fri', completed: 3, total: 3 },
-    { day: 'Sat', completed: 2, total: 3 },
-    { day: 'Sun', completed: 0, total: 3 },
-  ];
+  // Calculate this week's progress
+  const getThisWeeksProgress = () => {
+    const today = new Date();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay()); // Sunday
+    
+    return Array.from({length: 7}, (_, i) => {
+      const date = new Date(startOfWeek);
+      date.setDate(startOfWeek.getDate() + i);
+      const dateString = date.toISOString().split('T')[0];
+      
+      const completed = habits.filter(habit => 
+        streakData.some(d => d.habitId === habit.id && d.date === dateString && d.completed)
+      ).length;
+      
+      return {
+        day: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][i],
+        completed,
+        total: habits.length
+      };
+    });
+  };
+
+  const weeklyProgress = getThisWeeksProgress();
 
   const getStreakColor = (current: number) => {
     if (current >= 30) return 'text-primary';
@@ -34,9 +96,30 @@ const Dashboard = () => {
     return 'text-muted-foreground';
   };
 
-  const totalHabitsToday = 3;
-  const completedToday = 2;
-  const todayProgress = (completedToday / totalHabitsToday) * 100;
+  // Calculate today's progress
+  const today = new Date().toISOString().split('T')[0];
+  const totalHabitsToday = habits.length;
+  const completedToday = habits.filter(habit => 
+    streakData.some(d => d.habitId === habit.id && d.date === today && d.completed)
+  ).length;
+  const todayProgress = totalHabitsToday > 0 ? (completedToday / totalHabitsToday) * 100 : 0;
+
+  // Show empty state if no habits
+  if (habits.length === 0) {
+    return (
+      <div className="w-full max-w-6xl mx-auto p-6">
+        <div className="text-center py-12">
+          <div className="w-20 h-20 rounded-full bg-gradient-success/20 flex items-center justify-center mx-auto mb-6">
+            <Target className="w-10 h-10 text-muted-foreground" />
+          </div>
+          <h2 className="text-2xl font-bold text-foreground mb-4">Start Your Journey</h2>
+          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+            Add your first habit to begin tracking your progress and building positive streaks.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-6xl mx-auto p-6 space-y-6">
@@ -62,7 +145,7 @@ const Dashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-warning-foreground/80 text-sm font-medium">Active Streaks</p>
-                <p className="text-2xl font-bold text-warning-foreground">{currentStreaks.length}</p>
+                <p className="text-2xl font-bold text-warning-foreground">{currentStreaks.filter(s => s.current > 0).length}</p>
               </div>
               <div className="w-12 h-12 rounded-full bg-warning-foreground/20 flex items-center justify-center">
                 <Flame className="w-6 h-6 text-warning-foreground" />
