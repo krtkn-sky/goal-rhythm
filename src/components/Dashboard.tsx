@@ -4,7 +4,6 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Flame, Trophy, Target, TrendingUp, Calendar, Award, RotateCcw, ArrowLeft, Trash2 } from 'lucide-react';
-
 interface DeletedHabit {
   id: string;
   name: string;
@@ -17,26 +16,40 @@ interface DeletedHabit {
   frequency?: 'daily' | 'weekly';
   weeklyDays?: number[];
 }
-
 interface DashboardProps {
-  habits: Array<{id: string; name: string; icon: string; createdAt: string; color: string; frequency?: 'daily' | 'weekly'; weeklyDays?: number[]}>;
-  streakData: Array<{habitId: string; date: string; completed: boolean}>;
+  habits: Array<{
+    id: string;
+    name: string;
+    icon: string;
+    createdAt: string;
+    color: string;
+    frequency?: 'daily' | 'weekly';
+    weeklyDays?: number[];
+  }>;
+  streakData: Array<{
+    habitId: string;
+    date: string;
+    completed: boolean;
+  }>;
   deletedHabits: DeletedHabit[];
   onRestoreHabit?: (habit: DeletedHabit) => void;
 }
-
-const Dashboard = ({ habits = [], streakData = [], deletedHabits = [], onRestoreHabit }: DashboardProps) => {
+const Dashboard = ({
+  habits = [],
+  streakData = [],
+  deletedHabits = [],
+  onRestoreHabit
+}: DashboardProps) => {
   const [showRecycler, setShowRecycler] = useState(false);
   // Calculate current streaks for each habit
   const calculateCurrentStreak = (habitId: string) => {
     const today = new Date();
     let streak = 0;
-    
-    for (let i = 0; i < 365; i++) { // Check last 365 days
+    for (let i = 0; i < 365; i++) {
+      // Check last 365 days
       const checkDate = new Date(today);
       checkDate.setDate(checkDate.getDate() - i);
       const dateString = checkDate.toISOString().split('T')[0];
-      
       const entry = streakData.find(d => d.habitId === habitId && d.date === dateString);
       if (entry?.completed) {
         streak++;
@@ -46,57 +59,49 @@ const Dashboard = ({ habits = [], streakData = [], deletedHabits = [], onRestore
     }
     return streak;
   };
-
   const currentStreaks = habits.map(habit => ({
     name: habit.name,
     current: calculateCurrentStreak(habit.id),
-    best: Math.max(calculateCurrentStreak(habit.id), 0), // For now, same as current
+    best: Math.max(calculateCurrentStreak(habit.id), 0),
+    // For now, same as current
     icon: habit.icon,
     color: 'bg-primary'
   }));
-
-  const achievements = [
-    { 
-      name: 'First Step', 
-      description: 'Track your first habit', 
-      icon: '🎯', 
-      unlocked: habits.length > 0 
-    },
-    { 
-      name: 'Week Warrior', 
-      description: 'Complete any habit for 7 days straight', 
-      icon: '🏆', 
-      unlocked: currentStreaks.some(s => s.current >= 7) 
-    },
-    { 
-      name: 'Consistency King', 
-      description: 'Maintain 3 habits for 2 weeks', 
-      icon: '👑', 
-      unlocked: currentStreaks.filter(s => s.current >= 14).length >= 3 
-    },
-    { 
-      name: 'Month Master', 
-      description: 'Complete any habit for 30 days', 
-      icon: '🎖️', 
-      unlocked: currentStreaks.some(s => s.current >= 30) 
-    },
-  ];
+  const achievements = [{
+    name: 'First Step',
+    description: 'Track your first habit',
+    icon: '🎯',
+    unlocked: habits.length > 0
+  }, {
+    name: 'Week Warrior',
+    description: 'Complete any habit for 7 days straight',
+    icon: '🏆',
+    unlocked: currentStreaks.some(s => s.current >= 7)
+  }, {
+    name: 'Consistency King',
+    description: 'Maintain 3 habits for 2 weeks',
+    icon: '👑',
+    unlocked: currentStreaks.filter(s => s.current >= 14).length >= 3
+  }, {
+    name: 'Month Master',
+    description: 'Complete any habit for 30 days',
+    icon: '🎖️',
+    unlocked: currentStreaks.some(s => s.current >= 30)
+  }];
 
   // Calculate this week's progress
   const getThisWeeksProgress = () => {
     const today = new Date();
     const startOfWeek = new Date(today);
     startOfWeek.setDate(today.getDate() - today.getDay()); // Sunday
-    
-    return Array.from({length: 7}, (_, i) => {
+
+    return Array.from({
+      length: 7
+    }, (_, i) => {
       const date = new Date(startOfWeek);
       date.setDate(startOfWeek.getDate() + i);
       const dateString = date.toISOString().split('T')[0];
-      
-      const completed = habits.filter(habit => 
-        streakData.some(d => d.habitId === habit.id && d.date === dateString && d.completed)
-      ).length;
-      
+      const completed = habits.filter(habit => streakData.some(d => d.habitId === habit.id && d.date === dateString && d.completed)).length;
       return {
         day: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][i],
         completed,
@@ -104,9 +109,7 @@ const Dashboard = ({ habits = [], streakData = [], deletedHabits = [], onRestore
       };
     });
   };
-
   const weeklyProgress = getThisWeeksProgress();
-
   const getStreakColor = (current: number) => {
     if (current >= 30) return 'text-primary';
     if (current >= 14) return 'text-success';
@@ -117,19 +120,15 @@ const Dashboard = ({ habits = [], streakData = [], deletedHabits = [], onRestore
   // Calculate today's progress
   const today = new Date().toISOString().split('T')[0];
   const totalHabitsToday = habits.length;
-  const completedToday = habits.filter(habit => 
-    streakData.some(d => d.habitId === habit.id && d.date === today && d.completed)
-  ).length;
-  const todayProgress = totalHabitsToday > 0 ? (completedToday / totalHabitsToday) * 100 : 0;
-
+  const completedToday = habits.filter(habit => streakData.some(d => d.habitId === habit.id && d.date === today && d.completed)).length;
+  const todayProgress = totalHabitsToday > 0 ? completedToday / totalHabitsToday * 100 : 0;
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
     });
   };
-
   const getDaysSince = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -140,15 +139,9 @@ const Dashboard = ({ habits = [], streakData = [], deletedHabits = [], onRestore
 
   // Show recycler view if requested
   if (showRecycler) {
-    return (
-      <div className="w-full max-w-6xl mx-auto p-6 space-y-6">
+    return <div className="w-full max-w-6xl mx-auto p-6 space-y-6">
         <div className="flex items-center gap-4 mb-6">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => setShowRecycler(false)}
-            className="flex items-center gap-2"
-          >
+          <Button variant="ghost" size="sm" onClick={() => setShowRecycler(false)} className="flex items-center gap-2">
             <ArrowLeft className="w-4 h-4" />
             Back to Dashboard
           </Button>
@@ -158,8 +151,7 @@ const Dashboard = ({ habits = [], streakData = [], deletedHabits = [], onRestore
           </div>
         </div>
 
-        {deletedHabits.length === 0 ? (
-          <Card>
+        {deletedHabits.length === 0 ? <Card>
             <CardContent className="text-center py-12">
               <div className="w-20 h-20 rounded-full bg-muted/20 flex items-center justify-center mx-auto mb-6">
                 <Trash2 className="w-10 h-10 text-muted-foreground" />
@@ -169,9 +161,7 @@ const Dashboard = ({ habits = [], streakData = [], deletedHabits = [], onRestore
                 When you delete habits, they'll appear here for easy restoration.
               </p>
             </CardContent>
-          </Card>
-        ) : (
-          <Card>
+          </Card> : <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <RotateCcw className="w-5 h-5 text-muted-foreground" />
@@ -180,11 +170,7 @@ const Dashboard = ({ habits = [], streakData = [], deletedHabits = [], onRestore
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {deletedHabits.map((habit, index) => (
-                  <div
-                    key={`${habit.id}-${habit.deletedAt}`}
-                    className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50"
-                  >
+                {deletedHabits.map((habit, index) => <div key={`${habit.id}-${habit.deletedAt}`} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50">
                     <div className="flex items-center gap-3">
                       <div className="text-2xl opacity-60">{habit.icon}</div>
                       <div>
@@ -206,18 +192,12 @@ const Dashboard = ({ habits = [], streakData = [], deletedHabits = [], onRestore
                         </div>
                       </div>
                       
-                      <Button
-                        onClick={() => onRestoreHabit?.(habit)}
-                        size="sm"
-                        variant="outline"
-                        className="bg-gradient-motivation hover:scale-105 transition-transform"
-                      >
+                      <Button onClick={() => onRestoreHabit?.(habit)} size="sm" variant="outline" className="bg-gradient-motivation hover:scale-105 transition-transform bg-green-500 hover:bg-green-400">
                         <RotateCcw className="w-4 h-4 mr-2" />
                         Restore
                       </Button>
                     </div>
-                  </div>
-                ))}
+                  </div>)}
               </div>
               
               <div className="mt-4 p-3 bg-gradient-subtle rounded-lg border border-border/30">
@@ -226,16 +206,13 @@ const Dashboard = ({ habits = [], streakData = [], deletedHabits = [], onRestore
                 </p>
               </div>
             </CardContent>
-          </Card>
-        )}
-      </div>
-    );
+          </Card>}
+      </div>;
   }
 
   // Show dashboard with recycler option even when no habits
   if (habits.length === 0) {
-    return (
-      <div className="w-full max-w-6xl mx-auto p-6 space-y-6">
+    return <div className="w-full max-w-6xl mx-auto p-6 space-y-6">
         <div className="text-center py-12">
           <div className="w-20 h-20 rounded-full bg-gradient-success/20 flex items-center justify-center mx-auto mb-6">
             <Target className="w-10 h-10 text-muted-foreground" />
@@ -247,8 +224,7 @@ const Dashboard = ({ habits = [], streakData = [], deletedHabits = [], onRestore
         </div>
         
         {/* Show recycler if there are deleted habits */}
-        {deletedHabits.length > 0 && (
-          <Card>
+        {deletedHabits.length > 0 && <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Award className="w-5 h-5 text-accent" />
@@ -260,12 +236,10 @@ const Dashboard = ({ habits = [], streakData = [], deletedHabits = [], onRestore
                 <p className="text-sm">Complete your first habit to unlock achievements!</p>
               </div>
             </CardContent>
-          </Card>
-        )}
+          </Card>}
         
         {/* Habit Recycler Section */}
-        {deletedHabits.length > 0 && (
-          <Card>
+        {deletedHabits.length > 0 && <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Trash2 className="w-5 h-5 text-muted-foreground" />
@@ -273,11 +247,7 @@ const Dashboard = ({ habits = [], streakData = [], deletedHabits = [], onRestore
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <Button 
-                variant="outline" 
-                onClick={() => setShowRecycler(true)}
-                className="w-full flex items-center gap-2 text-left justify-start hover:bg-muted"
-              >
+              <Button variant="outline" onClick={() => setShowRecycler(true)} className="w-full flex items-center gap-2 text-left justify-start hover:bg-muted">
                 <div className="flex-1">
                   <div className="text-sm text-muted-foreground">
                     {deletedHabits.length} deleted habit{deletedHabits.length !== 1 ? 's' : ''} available to restore
@@ -285,17 +255,12 @@ const Dashboard = ({ habits = [], streakData = [], deletedHabits = [], onRestore
                 </div>
               </Button>
             </CardContent>
-          </Card>
-        )}
-      </div>
-    );
+          </Card>}
+      </div>;
   }
-
-  return (
-    <div className="w-full max-w-6xl mx-auto p-6 space-y-6">
+  return <div className="w-full max-w-6xl mx-auto p-6 space-y-6">
       {/* Overview Cards */}
-      {habits.length > 0 && (
-        <>
+      {habits.length > 0 && <>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card className="bg-gradient-success">
               <CardContent className="p-6">
@@ -370,8 +335,7 @@ const Dashboard = ({ habits = [], streakData = [], deletedHabits = [], onRestore
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {currentStreaks.map((streak, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 bg-gradient-subtle rounded-lg">
+                {currentStreaks.map((streak, index) => <div key={index} className="flex items-center justify-between p-4 bg-gradient-subtle rounded-lg">
                     <div className="flex items-center gap-3">
                       <div className="text-2xl">{streak.icon}</div>
                       <div>
@@ -385,8 +349,7 @@ const Dashboard = ({ habits = [], streakData = [], deletedHabits = [], onRestore
                       </div>
                       <p className="text-sm text-muted-foreground">days</p>
                     </div>
-                  </div>
-                ))}
+                  </div>)}
               </CardContent>
             </Card>
 
@@ -400,20 +363,12 @@ const Dashboard = ({ habits = [], streakData = [], deletedHabits = [], onRestore
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-7 gap-2">
-                  {weeklyProgress.map((day, index) => (
-                    <div key={index} className="text-center">
+                  {weeklyProgress.map((day, index) => <div key={index} className="text-center">
                       <div className="text-xs text-muted-foreground mb-2">{day.day}</div>
-                      <div className={`w-full h-8 rounded-md flex items-center justify-center text-sm font-medium ${
-                        day.completed === day.total 
-                          ? 'bg-gradient-success text-success-foreground' 
-                          : day.completed > 0 
-                          ? 'bg-gradient-motivation text-warning-foreground' 
-                          : 'bg-muted text-muted-foreground'
-                      }`}>
+                      <div className={`w-full h-8 rounded-md flex items-center justify-center text-sm font-medium ${day.completed === day.total ? 'bg-gradient-success text-success-foreground' : day.completed > 0 ? 'bg-gradient-motivation text-warning-foreground' : 'bg-muted text-muted-foreground'}`}>
                         {day.completed}/{day.total}
                       </div>
-                    </div>
-                  ))}
+                    </div>)}
                 </div>
               </CardContent>
             </Card>
@@ -429,61 +384,37 @@ const Dashboard = ({ habits = [], streakData = [], deletedHabits = [], onRestore
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {achievements.map((achievement, index) => (
-                  <div
-                    key={index}
-                    className={`p-4 rounded-lg border transition-all ${
-                      achievement.unlocked
-                        ? 'bg-gradient-achievement border-accent shadow-sm'
-                        : 'bg-muted/50 border-border opacity-60'
-                    }`}
-                  >
+                {achievements.map((achievement, index) => <div key={index} className={`p-4 rounded-lg border transition-all ${achievement.unlocked ? 'bg-gradient-achievement border-accent shadow-sm' : 'bg-muted/50 border-border opacity-60'}`}>
                     <div className="flex items-start gap-3">
                       <div className="text-2xl">{achievement.icon}</div>
                       <div className="flex-1">
-                        <h4 className={`font-semibold ${
-                          achievement.unlocked ? 'text-accent-foreground' : 'text-muted-foreground'
-                        }`}>
+                        <h4 className={`font-semibold ${achievement.unlocked ? 'text-accent-foreground' : 'text-muted-foreground'}`}>
                           {achievement.name}
                         </h4>
-                        <p className={`text-sm ${
-                          achievement.unlocked ? 'text-accent-foreground/80' : 'text-muted-foreground'
-                        }`}>
+                        <p className={`text-sm ${achievement.unlocked ? 'text-accent-foreground/80' : 'text-muted-foreground'}`}>
                           {achievement.description}
                         </p>
                       </div>
-                      {achievement.unlocked && (
-                        <Badge variant="secondary" className="bg-accent-foreground/20 text-accent-foreground">
+                      {achievement.unlocked && <Badge variant="secondary" className="bg-accent-foreground/20 text-accent-foreground">
                           Unlocked
-                        </Badge>
-                      )}
+                        </Badge>}
                     </div>
-                  </div>
-                ))}
+                  </div>)}
               </div>
               
               {/* Habit Recycler Button placed under achievements */}
-              {deletedHabits.length > 0 && (
-                <div className="mt-6 pt-4 border-t border-border">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setShowRecycler(true)}
-                    className="w-full flex items-center gap-2 text-left justify-start hover:bg-muted"
-                  >
+              {deletedHabits.length > 0 && <div className="mt-6 pt-4 border-t border-border">
+                  <Button variant="outline" onClick={() => setShowRecycler(true)} className="w-full flex items-center gap-2 text-left justify-start hover:bg-muted">
                     <Trash2 className="w-4 h-4 text-muted-foreground" />
                     <div className="flex-1">
                       <div className="font-medium">Habit Recycler</div>
                       <div className="text-sm text-muted-foreground">{deletedHabits.length} deleted habit{deletedHabits.length !== 1 ? 's' : ''} ready to restore</div>
                     </div>
                   </Button>
-                </div>
-              )}
+                </div>}
             </CardContent>
           </Card>
-        </>
-      )}
-    </div>
-  );
+        </>}
+    </div>;
 };
-
 export default Dashboard;
