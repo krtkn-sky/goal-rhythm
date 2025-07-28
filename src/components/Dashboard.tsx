@@ -1,8 +1,9 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { Flame, Trophy, Target, TrendingUp, Calendar, Award, RotateCcw } from 'lucide-react';
+import { Flame, Trophy, Target, TrendingUp, Calendar, Award, RotateCcw, ArrowLeft, Trash2 } from 'lucide-react';
 
 interface DeletedHabit {
   id: string;
@@ -22,6 +23,7 @@ interface DashboardProps {
 }
 
 const Dashboard = ({ habits = [], streakData = [], deletedHabits = [], onRestoreHabit }: DashboardProps) => {
+  const [showRecycler, setShowRecycler] = useState(false);
   // Calculate current streaks for each habit
   const calculateCurrentStreak = (habitId: string) => {
     const today = new Date();
@@ -132,6 +134,100 @@ const Dashboard = ({ habits = [], streakData = [], deletedHabits = [], onRestore
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
   };
+
+  // Show recycler view if requested
+  if (showRecycler) {
+    return (
+      <div className="w-full max-w-6xl mx-auto p-6 space-y-6">
+        <div className="flex items-center gap-4 mb-6">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => setShowRecycler(false)}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Dashboard
+          </Button>
+          <div className="flex items-center gap-2">
+            <Trash2 className="w-5 h-5 text-muted-foreground" />
+            <h1 className="text-xl font-bold text-foreground">Habit Recycler</h1>
+          </div>
+        </div>
+
+        {deletedHabits.length === 0 ? (
+          <Card>
+            <CardContent className="text-center py-12">
+              <div className="w-20 h-20 rounded-full bg-muted/20 flex items-center justify-center mx-auto mb-6">
+                <Trash2 className="w-10 h-10 text-muted-foreground" />
+              </div>
+              <h2 className="text-2xl font-bold text-foreground mb-4">No Deleted Habits</h2>
+              <p className="text-muted-foreground">
+                When you delete habits, they'll appear here for easy restoration.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <RotateCcw className="w-5 h-5 text-muted-foreground" />
+                Deleted Habits ({deletedHabits.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {deletedHabits.map((habit, index) => (
+                  <div
+                    key={`${habit.id}-${habit.deletedAt}`}
+                    className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="text-2xl opacity-60">{habit.icon}</div>
+                      <div>
+                        <h4 className="font-medium text-foreground opacity-80">{habit.name}</h4>
+                        <div className="text-sm text-muted-foreground space-y-1">
+                          <p>Started: {formatDate(habit.createdAt)}</p>
+                          <p>Deleted: {getDaysSince(habit.deletedAt)} days ago</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="text-right">
+                      <div className="space-y-1 mb-3">
+                        <div className="text-sm font-medium text-muted-foreground">
+                          🔥 Best Streak: <span className="text-primary">{habit.longestStreak} days</span>
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          📅 Total Days: {habit.totalDays}
+                        </div>
+                      </div>
+                      
+                      <Button
+                        onClick={() => onRestoreHabit?.(habit)}
+                        size="sm"
+                        variant="outline"
+                        className="bg-gradient-motivation hover:scale-105 transition-transform"
+                      >
+                        <RotateCcw className="w-4 h-4 mr-2" />
+                        Restore
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="mt-4 p-3 bg-gradient-subtle rounded-lg border border-border/30">
+                <p className="text-sm text-muted-foreground text-center">
+                  💡 <strong>Ready to get back on track?</strong> Your habits are waiting for you to restart that amazing streak!
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    );
+  }
 
   // Show empty state if no habits
   if (habits.length === 0 && deletedHabits.length === 0) {
@@ -325,62 +421,23 @@ const Dashboard = ({ habits = [], streakData = [], deletedHabits = [], onRestore
         </>
       )}
 
-      {/* Habit Recycler */}
+      {/* Habit Recycler Button */}
       {deletedHabits.length > 0 && (
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <RotateCcw className="w-5 h-5 text-muted-foreground" />
-              Habit Recycler
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {deletedHabits.map((habit, index) => (
-                <div
-                  key={`${habit.id}-${habit.deletedAt}`}
-                  className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="text-2xl opacity-60">{habit.icon}</div>
-                    <div>
-                      <h4 className="font-medium text-foreground opacity-80">{habit.name}</h4>
-                      <div className="text-sm text-muted-foreground space-y-1">
-                        <p>Started: {formatDate(habit.createdAt)}</p>
-                        <p>Deleted: {getDaysSince(habit.deletedAt)} days ago</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="text-right">
-                    <div className="space-y-1 mb-3">
-                      <div className="text-sm font-medium text-muted-foreground">
-                        🔥 Best Streak: <span className="text-primary">{habit.longestStreak} days</span>
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        📅 Total Days: {habit.totalDays}
-                      </div>
-                    </div>
-                    
-                    <Button
-                      onClick={() => onRestoreHabit?.(habit)}
-                      size="sm"
-                      variant="outline"
-                      className="bg-gradient-motivation hover:scale-105 transition-transform"
-                    >
-                      <RotateCcw className="w-4 h-4 mr-2" />
-                      Restore
-                    </Button>
-                  </div>
+          <CardContent className="p-4">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowRecycler(true)}
+              className="w-full flex items-center gap-2 text-left justify-start"
+            >
+              <Trash2 className="w-4 h-4 text-muted-foreground" />
+              <div className="flex-1">
+                <div className="font-medium">Habit Recycler</div>
+                <div className="text-sm text-muted-foreground">
+                  {deletedHabits.length} deleted habit{deletedHabits.length > 1 ? 's' : ''} available for restoration
                 </div>
-              ))}
-            </div>
-            
-            <div className="mt-4 p-3 bg-gradient-subtle rounded-lg border border-border/30">
-              <p className="text-sm text-muted-foreground text-center">
-                💡 <strong>Ready to get back on track?</strong> Your habits are waiting for you to restart that amazing streak!
-              </p>
-            </div>
+              </div>
+            </Button>
           </CardContent>
         </Card>
       )}

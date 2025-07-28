@@ -5,9 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { ChevronLeft, ChevronRight, Calendar, Target, Plus, X, ChevronDown, Check, Minus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Target, Plus, X, ChevronDown, Check, Minus, List } from 'lucide-react';
 
 interface Habit {
   id: string;
@@ -15,6 +17,8 @@ interface Habit {
   color: string;
   icon: string;
   createdAt: string;
+  frequency: 'daily' | 'weekly';
+  weeklyDays?: number[]; // 0-6 for Sunday-Saturday
 }
 
 interface StreakData {
@@ -44,6 +48,8 @@ const HabitCalendar = ({ onHabitsChange, onStreakDataChange, onDeletedHabitsChan
   const [isAddHabitOpen, setIsAddHabitOpen] = useState(false);
   const [newHabitName, setNewHabitName] = useState('');
   const [newHabitIcon, setNewHabitIcon] = useState('🎯');
+  const [newHabitFrequency, setNewHabitFrequency] = useState<'daily' | 'weekly'>('daily');
+  const [newHabitWeeklyDays, setNewHabitWeeklyDays] = useState<number[]>([]);
   const [habitToDelete, setHabitToDelete] = useState<string | null>(null);
 
   const habitIcons = ['🎯', '💪', '📚', '🧘', '🏃', '💧', '🍎', '😴', '✍️', '🎨'];
@@ -67,21 +73,33 @@ const HabitCalendar = ({ onHabitsChange, onStreakDataChange, onDeletedHabitsChan
   };
 
   const addNewHabit = () => {
-    if (newHabitName.trim()) {
+    if (newHabitName.trim() && (newHabitFrequency === 'daily' || newHabitWeeklyDays.length > 0)) {
       const newHabit: Habit = {
         id: Date.now().toString(),
         name: newHabitName.trim(),
         color: habitColors[selectedHabits.length % habitColors.length],
         icon: newHabitIcon,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        frequency: newHabitFrequency,
+        weeklyDays: newHabitFrequency === 'weekly' ? newHabitWeeklyDays : undefined
       };
       const updatedHabits = [...selectedHabits, newHabit];
       setSelectedHabits(updatedHabits);
       onHabitsChange?.(updatedHabits);
       setNewHabitName('');
       setNewHabitIcon('🎯');
+      setNewHabitFrequency('daily');
+      setNewHabitWeeklyDays([]);
       setIsAddHabitOpen(false);
     }
+  };
+
+  const toggleWeeklyDay = (dayIndex: number) => {
+    setNewHabitWeeklyDays(prev => 
+      prev.includes(dayIndex) 
+        ? prev.filter(d => d !== dayIndex)
+        : [...prev, dayIndex].sort()
+    );
   };
 
   const calculateLongestStreak = (habitId: string): number => {
@@ -202,64 +220,91 @@ const HabitCalendar = ({ onHabitsChange, onStreakDataChange, onDeletedHabitsChan
           }`}>
             {day}
           </div>
-          <div className="flex flex-wrap gap-2">
-            {selectedHabits.map(habit => {
-              const status = getHabitStatusForDate(habit.id, dateString);
-              return (
-                <DropdownMenu key={habit.id}>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      disabled={isFuture}
-                      className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-all ${
-                        isFuture ? 'cursor-not-allowed opacity-30' : 'hover:scale-105'
-                      } ${
-                        status === true
-                          ? 'bg-gradient-success text-success-foreground shadow-sm'
-                          : status === false
-                          ? 'bg-destructive/20 text-destructive border border-destructive/40'
-                          : 'bg-muted border border-border hover:bg-muted-foreground/20'
-                      }`}
-                      title={`${habit.name} - ${status === true ? 'Completed' : status === false ? 'Missed' : 'Not tracked'}`}
-                    >
-                      <span>{habit.icon}</span>
-                      {!isFuture && <ChevronDown className="w-3 h-3" />}
-                    </button>
-                  </DropdownMenuTrigger>
-                  {!isFuture && (
-                    <DropdownMenuContent className="w-48 bg-popover border border-border shadow-lg z-50">
-                      <DropdownMenuItem 
-                        onClick={() => toggleHabitStatus(habit.id, dateString, true)}
-                        className="flex items-center gap-2 cursor-pointer"
-                      >
-                        <Check className="w-4 h-4 text-success" />
-                        Mark as Completed
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => toggleHabitStatus(habit.id, dateString, false)}
-                        className="flex items-center gap-2 cursor-pointer"
-                      >
-                        <Minus className="w-4 h-4 text-destructive" />
-                        Mark as Missed
-                      </DropdownMenuItem>
-                      {status !== undefined && (
-                        <>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem 
+          {/* Unified Dropdown for all habits */}
+          {selectedHabits.length > 0 && !isFuture && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full h-8 text-xs"
+                >
+                  <List className="w-3 h-3 mr-1" />
+                  Track Habits
+                  <ChevronDown className="w-3 h-3 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-64 bg-popover border border-border shadow-lg z-50">
+                {selectedHabits.map(habit => {
+                  const status = getHabitStatusForDate(habit.id, dateString);
+                  return (
+                    <div key={habit.id} className="p-2 border-b border-border/50 last:border-b-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-lg">{habit.icon}</span>
+                        <span className="font-medium text-sm flex-1">{habit.name}</span>
+                        <div className={`w-2 h-2 rounded-full ${
+                          status === true ? 'bg-success' : status === false ? 'bg-destructive' : 'bg-muted-foreground'
+                        }`} />
+                      </div>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant={status === true ? "default" : "outline"}
+                          onClick={() => toggleHabitStatus(habit.id, dateString, true)}
+                          className="flex-1 h-7 text-xs"
+                        >
+                          <Check className="w-3 h-3 mr-1" />
+                          Done
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={status === false ? "destructive" : "outline"}
+                          onClick={() => toggleHabitStatus(habit.id, dateString, false)}
+                          className="flex-1 h-7 text-xs"
+                        >
+                          <Minus className="w-3 h-3 mr-1" />
+                          Miss
+                        </Button>
+                        {status !== undefined && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
                             onClick={() => {
                               const updatedData = streakData.filter(d => !(d.habitId === habit.id && d.date === dateString));
                               setStreakData(updatedData);
                               onStreakDataChange?.(updatedData);
                             }}
-                            className="flex items-center gap-2 cursor-pointer"
+                            className="h-7 w-7 p-0"
                           >
-                            <X className="w-4 h-4 text-muted-foreground" />
-                            Clear Status
-                          </DropdownMenuItem>
-                        </>
-                      )}
-                    </DropdownMenuContent>
-                  )}
-                </DropdownMenu>
+                            <X className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          
+          {/* Habit Status Indicators */}
+          <div className="flex flex-wrap gap-1 mt-2">
+            {selectedHabits.map(habit => {
+              const status = getHabitStatusForDate(habit.id, dateString);
+              return (
+                <div
+                  key={habit.id}
+                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
+                    status === true
+                      ? 'bg-gradient-success text-success-foreground'
+                      : status === false
+                      ? 'bg-destructive/20 text-destructive border border-destructive/40'
+                      : 'bg-muted/30 border border-border'
+                  }`}
+                  title={`${habit.name} - ${status === true ? 'Completed' : status === false ? 'Missed' : 'Not tracked'}`}
+                >
+                  {habit.icon}
+                </div>
               );
             })}
           </div>
@@ -312,6 +357,38 @@ const HabitCalendar = ({ onHabitsChange, onStreakDataChange, onDeletedHabitsChan
                     className="mt-1"
                   />
                 </div>
+                
+                <div>
+                  <Label>Frequency</Label>
+                  <Select value={newHabitFrequency} onValueChange={(value: 'daily' | 'weekly') => setNewHabitFrequency(value)}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Select frequency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="daily">Every day</SelectItem>
+                      <SelectItem value="weekly">Specific days of the week</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {newHabitFrequency === 'weekly' && (
+                  <div>
+                    <Label>Select Days</Label>
+                    <div className="grid grid-cols-7 gap-2 mt-2">
+                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
+                        <div key={day} className="flex flex-col items-center gap-1">
+                          <Checkbox
+                            id={`day-${index}`}
+                            checked={newHabitWeeklyDays.includes(index)}
+                            onCheckedChange={() => toggleWeeklyDay(index)}
+                          />
+                          <Label htmlFor={`day-${index}`} className="text-xs">{day}</Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
                 <div>
                   <Label>Choose Icon</Label>
                   <div className="flex flex-wrap gap-2 mt-2">
@@ -331,7 +408,11 @@ const HabitCalendar = ({ onHabitsChange, onStreakDataChange, onDeletedHabitsChan
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button onClick={addNewHabit} className="flex-1">
+                  <Button 
+                    onClick={addNewHabit} 
+                    className="flex-1"
+                    disabled={!newHabitName.trim() || (newHabitFrequency === 'weekly' && newHabitWeeklyDays.length === 0)}
+                  >
                     Add Habit
                   </Button>
                   <Button variant="outline" onClick={() => setIsAddHabitOpen(false)}>
