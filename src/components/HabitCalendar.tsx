@@ -17,7 +17,7 @@ interface Habit {
   color: string;
   icon: string;
   createdAt: string;
-  frequency: 'daily' | 'weekly';
+  frequency?: 'daily' | 'weekly';
   weeklyDays?: number[]; // 0-6 for Sunday-Saturday
 }
 
@@ -34,17 +34,29 @@ interface DeletedHabit extends Habit {
 }
 
 interface HabitCalendarProps {
+  habits?: Habit[];
+  streakData?: StreakData[];
+  deletedHabits?: DeletedHabit[];
   onHabitsChange?: (habits: Habit[]) => void;
   onStreakDataChange?: (data: StreakData[]) => void;
   onDeletedHabitsChange?: (deleted: DeletedHabit[]) => void;
 }
 
-const HabitCalendar = ({ onHabitsChange, onStreakDataChange, onDeletedHabitsChange }: HabitCalendarProps) => {
+const HabitCalendar = ({ 
+  habits: externalHabits = [], 
+  streakData: externalStreakData = [], 
+  deletedHabits: externalDeletedHabits = [],
+  onHabitsChange, 
+  onStreakDataChange, 
+  onDeletedHabitsChange 
+}: HabitCalendarProps) => {
   const today = new Date();
   const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
-  const [selectedHabits, setSelectedHabits] = useState<Habit[]>([]);
-  const [streakData, setStreakData] = useState<StreakData[]>([]);
-  const [deletedHabits, setDeletedHabits] = useState<DeletedHabit[]>([]);
+  
+  // Use external state if provided, otherwise fall back to local state
+  const selectedHabits = externalHabits;
+  const streakData = externalStreakData;
+  const deletedHabits = externalDeletedHabits;
   const [isAddHabitOpen, setIsAddHabitOpen] = useState(false);
   const [newHabitName, setNewHabitName] = useState('');
   const [newHabitIcon, setNewHabitIcon] = useState('🎯');
@@ -84,7 +96,6 @@ const HabitCalendar = ({ onHabitsChange, onStreakDataChange, onDeletedHabitsChan
         weeklyDays: newHabitFrequency === 'weekly' ? newHabitWeeklyDays : undefined
       };
       const updatedHabits = [...selectedHabits, newHabit];
-      setSelectedHabits(updatedHabits);
       onHabitsChange?.(updatedHabits);
       setNewHabitName('');
       setNewHabitIcon('🎯');
@@ -146,10 +157,6 @@ const HabitCalendar = ({ onHabitsChange, onStreakDataChange, onDeletedHabitsChan
     const updatedHabits = selectedHabits.filter(h => h.id !== habitId);
     const updatedStreakData = streakData.filter(d => d.habitId !== habitId);
     const updatedDeletedHabits = [...deletedHabits, deletedHabit];
-
-    setSelectedHabits(updatedHabits);
-    setStreakData(updatedStreakData);
-    setDeletedHabits(updatedDeletedHabits);
     
     onHabitsChange?.(updatedHabits);
     onStreakDataChange?.(updatedStreakData);
@@ -170,7 +177,6 @@ const HabitCalendar = ({ onHabitsChange, onStreakDataChange, onDeletedHabitsChan
     const updatedStreakData = streakData.filter(d => !(d.habitId === habitId && d.date === date));
     updatedStreakData.push({ habitId, date, completed });
     
-    setStreakData(updatedStreakData);
     onStreakDataChange?.(updatedStreakData);
   };
 
@@ -271,7 +277,6 @@ const HabitCalendar = ({ onHabitsChange, onStreakDataChange, onDeletedHabitsChan
                             variant="ghost"
                             onClick={() => {
                               const updatedData = streakData.filter(d => !(d.habitId === habit.id && d.date === dateString));
-                              setStreakData(updatedData);
                               onStreakDataChange?.(updatedData);
                             }}
                             className="h-7 w-7 p-0"

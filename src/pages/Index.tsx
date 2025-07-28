@@ -11,6 +11,8 @@ interface Habit {
   color: string;
   icon: string;
   createdAt: string;
+  frequency?: 'daily' | 'weekly';
+  weeklyDays?: number[];
 }
 
 interface StreakData {
@@ -22,11 +24,14 @@ interface StreakData {
 interface DeletedHabit {
   id: string;
   name: string;
+  color: string;
   icon: string;
   createdAt: string;
   deletedAt: string;
   longestStreak: number;
   totalDays: number;
+  frequency?: 'daily' | 'weekly';
+  weeklyDays?: number[];
 }
 
 const Index = () => {
@@ -54,9 +59,11 @@ const Index = () => {
     const restoredHabit: Habit = {
       id: Date.now().toString(), // New ID
       name: deletedHabit.name,
-      color: 'bg-primary', // Default color since it's not in DeletedHabit interface
+      color: deletedHabit.color,
       icon: deletedHabit.icon,
-      createdAt: new Date().toISOString() // New start date
+      createdAt: new Date().toISOString(), // New start date
+      frequency: deletedHabit.frequency,
+      weeklyDays: deletedHabit.weeklyDays
     };
     
     const updatedHabits = [...habits, restoredHabit];
@@ -121,6 +128,9 @@ const Index = () => {
 
           <TabsContent value="calendar" className="mt-0">
             <HabitCalendar 
+              habits={habits}
+              streakData={streakData}
+              deletedHabits={deletedHabits}
               onHabitsChange={setHabits}
               onStreakDataChange={setStreakData}
               onDeletedHabitsChange={setDeletedHabits}

@@ -8,15 +8,18 @@ import { Flame, Trophy, Target, TrendingUp, Calendar, Award, RotateCcw, ArrowLef
 interface DeletedHabit {
   id: string;
   name: string;
+  color: string;
   icon: string;
   createdAt: string;
   deletedAt: string;
   longestStreak: number;
   totalDays: number;
+  frequency?: 'daily' | 'weekly';
+  weeklyDays?: number[];
 }
 
 interface DashboardProps {
-  habits: Array<{id: string; name: string; icon: string; createdAt: string}>;
+  habits: Array<{id: string; name: string; icon: string; createdAt: string; color: string; frequency?: 'daily' | 'weekly'; weeklyDays?: number[]}>;
   streakData: Array<{habitId: string; date: string; completed: boolean}>;
   deletedHabits: DeletedHabit[];
   onRestoreHabit?: (habit: DeletedHabit) => void;
@@ -416,30 +419,26 @@ const Dashboard = ({ habits = [], streakData = [], deletedHabits = [], onRestore
                   </div>
                 ))}
               </div>
+              
+              {/* Habit Recycler Button placed under achievements */}
+              {deletedHabits.length > 0 && (
+                <div className="mt-6 pt-4 border-t border-border">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setShowRecycler(true)}
+                    className="w-full flex items-center gap-2 text-left justify-start hover:bg-muted"
+                  >
+                    <Trash2 className="w-4 h-4 text-muted-foreground" />
+                    <div className="flex-1">
+                      <div className="font-medium">Habit Recycler</div>
+                      <div className="text-sm text-muted-foreground">{deletedHabits.length} deleted habit{deletedHabits.length !== 1 ? 's' : ''} ready to restore</div>
+                    </div>
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </>
-      )}
-
-      {/* Habit Recycler Button */}
-      {deletedHabits.length > 0 && (
-        <Card>
-          <CardContent className="p-4">
-            <Button 
-              variant="outline" 
-              onClick={() => setShowRecycler(true)}
-              className="w-full flex items-center gap-2 text-left justify-start"
-            >
-              <Trash2 className="w-4 h-4 text-muted-foreground" />
-              <div className="flex-1">
-                <div className="font-medium">Habit Recycler</div>
-                <div className="text-sm text-muted-foreground">
-                  {deletedHabits.length} deleted habit{deletedHabits.length > 1 ? 's' : ''} available for restoration
-                </div>
-              </div>
-            </Button>
-          </CardContent>
-        </Card>
       )}
     </div>
   );
