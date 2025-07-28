@@ -198,30 +198,30 @@ const HabitCalendar = ({
   };
 
   const renderDayIndicator = (status: string) => {
-    const baseStyle = "absolute top-1 left-1 w-4 h-4 flex items-center justify-center text-xs font-bold";
+    const baseStyle = "absolute inset-0 flex items-center justify-center pointer-events-none";
     
     switch (status) {
       case 'complete':
         return (
           <div className={`${baseStyle} text-green-600`}>
-            <svg viewBox="0 0 16 16" className="w-full h-full" fill="currentColor">
-              <path d="M3 8l3 3 7-7" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+            <svg viewBox="0 0 24 24" className="w-8 h-8" fill="currentColor">
+              <path d="M4 12l4 4 12-12" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
         );
       case 'partial':
         return (
           <div className={`${baseStyle} text-yellow-500`}>
-            <svg viewBox="0 0 16 16" className="w-full h-full" fill="currentColor">
-              <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="2" fill="none"/>
+            <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
+              <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="3" fill="none"/>
             </svg>
           </div>
         );
       case 'missed':
         return (
           <div className={`${baseStyle} text-red-500`}>
-            <svg viewBox="0 0 16 16" className="w-full h-full" fill="currentColor">
-              <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round"/>
+            <svg viewBox="0 0 24 24" className="w-8 h-8" fill="currentColor">
+              <path d="M6 6l12 12M18 6l-12 12" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round"/>
             </svg>
           </div>
         );
@@ -280,6 +280,7 @@ const HabitCalendar = ({
           
           {/* Day completion indicator */}
           {!isFuture && dayStatus !== 'none' && renderDayIndicator(dayStatus)}
+          
           {/* Unified Dropdown for all habits */}
           {selectedHabits.length > 0 && !isFuture && (
             <DropdownMenu>
