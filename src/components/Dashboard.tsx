@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Flame, Trophy, Target, TrendingUp, Calendar, Award, RotateCcw, ArrowLeft, Trash2 } from 'lucide-react';
 interface DeletedHabit {
   id: string;
@@ -33,12 +34,16 @@ interface DashboardProps {
   }>;
   deletedHabits: DeletedHabit[];
   onRestoreHabit?: (habit: DeletedHabit) => void;
+  onDeleteHabit?: (habitId: string) => void;
+  onDeleteAllHabits?: () => void;
 }
 const Dashboard = ({
   habits = [],
   streakData = [],
   deletedHabits = [],
-  onRestoreHabit
+  onRestoreHabit,
+  onDeleteHabit,
+  onDeleteAllHabits
 }: DashboardProps) => {
   const [showRecycler, setShowRecycler] = useState(false);
   // Calculate current streaks for each habit
@@ -163,9 +168,30 @@ const Dashboard = ({
             </CardContent>
           </Card> : <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <RotateCcw className="w-5 h-5 text-muted-foreground" />
-                Deleted Habits ({deletedHabits.length})
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <RotateCcw className="w-5 h-5 text-muted-foreground" />
+                  Deleted Habits ({deletedHabits.length})
+                </div>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm">
+                      Delete All
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete all habits from the recycler.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={onDeleteAllHabits}>Delete All</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -192,10 +218,16 @@ const Dashboard = ({
                         </div>
                       </div>
                       
-                      <Button onClick={() => onRestoreHabit?.(habit)} size="sm" variant="outline" className="bg-gradient-motivation hover:scale-105 transition-transform bg-green-500 hover:bg-green-400">
-                        <RotateCcw className="w-4 h-4 mr-2" />
-                        Restore
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button onClick={() => onRestoreHabit?.(habit)} size="sm" variant="outline" className="bg-green-500 hover:bg-green-400 text-white border-green-500">
+                          <RotateCcw className="w-4 h-4 mr-2" />
+                          Restore
+                        </Button>
+                        <Button onClick={() => onDeleteHabit?.(habit.id)} size="sm" variant="destructive">
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete
+                        </Button>
+                      </div>
                     </div>
                   </div>)}
               </div>
@@ -402,16 +434,24 @@ const Dashboard = ({
                   </div>)}
               </div>
               
-              {/* Habit Recycler Button placed under achievements */}
-              {deletedHabits.length > 0 && <div className="mt-6 pt-4 border-t border-border">
+              {/* Habit Recycler Section - always show if there are deleted habits */}
+              <div className="mt-6 pt-4 border-t border-border">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                    <Trash2 className="w-5 h-5 text-muted-foreground" />
+                    Habit Recycler
+                  </h3>
+                </div>
+                {deletedHabits.length > 0 ? (
                   <Button variant="outline" onClick={() => setShowRecycler(true)} className="w-full flex items-center gap-2 text-left justify-start hover:bg-muted">
-                    <Trash2 className="w-4 h-4 text-muted-foreground" />
                     <div className="flex-1">
-                      <div className="font-medium">Habit Recycler</div>
                       <div className="text-sm text-muted-foreground">{deletedHabits.length} deleted habit{deletedHabits.length !== 1 ? 's' : ''} ready to restore</div>
                     </div>
                   </Button>
-                </div>}
+                ) : (
+                  <p className="text-sm text-muted-foreground">No deleted habits yet</p>
+                )}
+              </div>
             </CardContent>
           </Card>
         </>}
