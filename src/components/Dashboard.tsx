@@ -3,8 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Flame, Trophy, Target, TrendingUp, Calendar, Award, RotateCcw, ArrowLeft, Trash2 } from 'lucide-react';
+import { Flame, Trophy, Target, TrendingUp, Calendar, Award, RotateCcw, ArrowLeft, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 interface DeletedHabit {
   id: string;
   name: string;
@@ -36,6 +41,7 @@ interface DashboardProps {
   onRestoreHabit?: (habit: DeletedHabit) => void;
   onDeleteHabit?: (habitId: string) => void;
   onDeleteAllHabits?: () => void;
+  onEditHabit?: (habitId: string, updatedHabit: any) => void;
 }
 const Dashboard = ({
   habits = [],
@@ -43,9 +49,16 @@ const Dashboard = ({
   deletedHabits = [],
   onRestoreHabit,
   onDeleteHabit,
-  onDeleteAllHabits
+  onDeleteAllHabits,
+  onEditHabit
 }: DashboardProps) => {
   const [showRecycler, setShowRecycler] = useState(false);
+  const [editingHabit, setEditingHabit] = useState<any>(null);
+  const [editHabitName, setEditHabitName] = useState('');
+  const [editHabitIcon, setEditHabitIcon] = useState('');
+  const [editHabitFrequency, setEditHabitFrequency] = useState<'daily' | 'weekly'>('daily');
+  const [editHabitWeeklyDays, setEditHabitWeeklyDays] = useState<number[]>([]);
+  const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date());
   // Calculate current streaks for each habit
   const calculateCurrentStreak = (habitId: string) => {
     const today = new Date();
@@ -127,19 +140,112 @@ const Dashboard = ({
   const totalHabitsToday = habits.length;
   const completedToday = habits.filter(habit => streakData.some(d => d.habitId === habit.id && d.date === today && d.completed)).length;
   const todayProgress = totalHabitsToday > 0 ? completedToday / totalHabitsToday * 100 : 0;
-  const formatDate = (dateString: string) => {
+  const formatDateString = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric'
     });
   };
+  
   const getDaysSince = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - date.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
+  };
+
+  const habitIcons = ['🎯', '💪', '📚', '🧘', '🏃', '💧', '🍎', '😴', '✍️', '🎨'];
+
+  const openEditHabit = (habit: any) => {
+    setEditingHabit(habit);
+    setEditHabitName(habit.name);
+    setEditHabitIcon(habit.icon);
+    setEditHabitFrequency(habit.frequency || 'daily');
+    setEditHabitWeeklyDays(habit.weeklyDays || []);
+  };
+
+  const saveEditHabit = () => {
+    if (editHabitName.trim() && (editHabitFrequency === 'daily' || editHabitWeeklyDays.length > 0)) {
+      const updatedHabit = {
+        ...editingHabit,
+        name: editHabitName.trim(),
+        icon: editHabitIcon,
+        frequency: editHabitFrequency,
+        weeklyDays: editHabitFrequency === 'weekly' ? editHabitWeeklyDays : undefined
+      };
+      onEditHabit?.(editingHabit.id, updatedHabit);
+      setEditingHabit(null);
+    }
+  };
+
+  const toggleEditWeeklyDay = (dayIndex: number) => {
+    setEditHabitWeeklyDays(prev => 
+      prev.includes(dayIndex) 
+        ? prev.filter(d => d !== dayIndex)
+        : [...prev, dayIndex].sort()
+    );
+  };
+
+  // Calendar rendering functions
+  const getDaysInMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+  };
+
+  const formatDateToString = (date: Date) => {
+    return date.toISOString().split('T')[0];
+  };
+
+  const renderMiniCalendar = () => {
+    const daysInMonth = getDaysInMonth(currentCalendarDate);
+    const firstDay = getFirstDayOfMonth(currentCalendarDate);
+    const days = [];
+    const today = new Date();
+    const todayString = formatDateToString(today);
+
+    // Empty cells for previous month
+    for (let i = 0; i < firstDay; i++) {
+      days.push(<div key={`empty-${i}`} className="h-8 border border-border/20"></div>);
+    }
+
+    // Calendar days
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth(), day);
+      const dateString = formatDateToString(date);
+      const isToday = dateString === todayString;
+
+      days.push(
+        <div
+          key={day}
+          className={`h-8 border border-border/20 flex items-center justify-center text-xs transition-colors ${
+            isToday 
+              ? 'bg-primary/10 text-primary border-primary/30 font-medium' 
+              : 'bg-card text-muted-foreground hover:bg-muted/50'
+          }`}
+        >
+          {day}
+        </div>
+      );
+    }
+
+    return days;
+  };
+
+  const navigateCalendarMonth = (direction: 'prev' | 'next') => {
+    setCurrentCalendarDate(prev => {
+      const newDate = new Date(prev);
+      if (direction === 'prev') {
+        newDate.setMonth(newDate.getMonth() - 1);
+      } else {
+        newDate.setMonth(newDate.getMonth() + 1);
+      }
+      return newDate;
+    });
   };
 
   // Show recycler view if requested
@@ -201,10 +307,10 @@ const Dashboard = ({
                       <div className="text-2xl opacity-60">{habit.icon}</div>
                       <div>
                         <h4 className="font-medium text-foreground opacity-80">{habit.name}</h4>
-                        <div className="text-sm text-muted-foreground space-y-1">
-                          <p>Started: {formatDate(habit.createdAt)}</p>
-                          <p>Deleted: {getDaysSince(habit.deletedAt)} days ago</p>
-                        </div>
+                         <div className="text-sm text-muted-foreground space-y-1">
+                           <p>Started: {formatDateString(habit.createdAt)}</p>
+                           <p>Deleted: {getDaysSince(habit.deletedAt)} days ago</p>
+                         </div>
                       </div>
                     </div>
                     
@@ -367,40 +473,74 @@ const Dashboard = ({
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {currentStreaks.map((streak, index) => <div key={index} className="flex items-center justify-between p-4 bg-gradient-subtle rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="text-2xl">{streak.icon}</div>
-                      <div>
-                        <h4 className="font-semibold text-foreground">{streak.name}</h4>
-                        <p className="text-sm text-muted-foreground">Best: {streak.best} days</p>
+                {currentStreaks.map((streak, index) => {
+                  const habit = habits.find(h => h.name === streak.name);
+                  return (
+                    <div 
+                      key={index} 
+                      className="flex items-center justify-between p-4 bg-gradient-subtle rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => habit && openEditHabit(habit)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="text-2xl">{streak.icon}</div>
+                        <div>
+                          <h4 className="font-semibold text-foreground">{streak.name}</h4>
+                          <p className="text-sm text-muted-foreground">Best: {streak.best} days</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className={`text-2xl font-bold ${getStreakColor(streak.current)}`}>
+                          {streak.current}
+                        </div>
+                        <p className="text-sm text-muted-foreground">days</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className={`text-2xl font-bold ${getStreakColor(streak.current)}`}>
-                        {streak.current}
-                      </div>
-                      <p className="text-sm text-muted-foreground">days</p>
-                    </div>
-                  </div>)}
+                  );
+                })}
               </CardContent>
             </Card>
 
-            {/* Weekly Overview */}
+            {/* Mini Calendar */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-success" />
-                  This Week's Progress
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-accent" />
+                    Calendar View
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0"
+                      onClick={() => navigateCalendarMonth('prev')}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                    <div className="text-sm font-medium px-2">
+                      {currentCalendarDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-8 w-8 p-0"
+                      onClick={() => navigateCalendarMonth('next')}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-7 gap-2">
-                  {weeklyProgress.map((day, index) => <div key={index} className="text-center">
-                      <div className="text-xs text-muted-foreground mb-2">{day.day}</div>
-                      <div className={`w-full h-8 rounded-md flex items-center justify-center text-sm font-medium ${day.completed === day.total ? 'bg-gradient-success text-success-foreground' : day.completed > 0 ? 'bg-gradient-motivation text-warning-foreground' : 'bg-muted text-muted-foreground'}`}>
-                        {day.completed}/{day.total}
-                      </div>
-                    </div>)}
+                <div className="space-y-2">
+                  <div className="grid grid-cols-7 gap-1 text-xs text-center text-muted-foreground font-medium">
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                      <div key={day} className="py-1">{day}</div>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-7 gap-1">
+                    {renderMiniCalendar()}
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -455,6 +595,89 @@ const Dashboard = ({
             </CardContent>
           </Card>
         </>}
+
+        {/* Edit Habit Dialog */}
+        <Dialog open={!!editingHabit} onOpenChange={() => setEditingHabit(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Habit</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit-habit-name">Habit Name</Label>
+                <Input
+                  id="edit-habit-name"
+                  value={editHabitName}
+                  onChange={(e) => setEditHabitName(e.target.value)}
+                  placeholder="e.g., Morning Exercise"
+                  className="mt-1"
+                />
+              </div>
+              
+              <div>
+                <Label>Frequency</Label>
+                <Select value={editHabitFrequency} onValueChange={(value: 'daily' | 'weekly') => setEditHabitFrequency(value)}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select frequency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="daily">Every day</SelectItem>
+                    <SelectItem value="weekly">Specific days of the week</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {editHabitFrequency === 'weekly' && (
+                <div>
+                  <Label>Select Days</Label>
+                  <div className="grid grid-cols-7 gap-2 mt-2">
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
+                      <div key={day} className="flex flex-col items-center gap-1">
+                        <Checkbox
+                          id={`edit-day-${index}`}
+                          checked={editHabitWeeklyDays.includes(index)}
+                          onCheckedChange={() => toggleEditWeeklyDay(index)}
+                        />
+                        <Label htmlFor={`edit-day-${index}`} className="text-xs">{day}</Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <div>
+                <Label>Choose Icon</Label>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {habitIcons.map(icon => (
+                    <button
+                      key={icon}
+                      onClick={() => setEditHabitIcon(icon)}
+                      className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-all ${
+                        editHabitIcon === icon 
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'bg-muted hover:bg-muted-foreground/20'
+                      }`}
+                    >
+                      {icon}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={saveEditHabit} 
+                  className="flex-1"
+                  disabled={!editHabitName.trim() || (editHabitFrequency === 'weekly' && editHabitWeeklyDays.length === 0)}
+                >
+                  Save Changes
+                </Button>
+                <Button variant="outline" onClick={() => setEditingHabit(null)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
     </div>;
 };
 export default Dashboard;

@@ -70,6 +70,13 @@ const Index = () => {
     setHabits(updatedHabits);
   };
 
+  const editHabit = (habitId: string, updatedHabit: Habit) => {
+    const updatedHabits = habits.map(habit => 
+      habit.id === habitId ? updatedHabit : habit
+    );
+    setHabits(updatedHabits);
+  };
+
   const toggleDarkMode = () => {
     const newDarkMode = !isDarkMode;
     setIsDarkMode(newDarkMode);
@@ -143,6 +150,7 @@ const Index = () => {
               streakData={streakData} 
               deletedHabits={deletedHabits}
               onRestoreHabit={restoreHabit}
+              onEditHabit={editHabit}
             />
           </TabsContent>
         </Tabs>
