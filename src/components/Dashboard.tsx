@@ -361,6 +361,51 @@ const Dashboard = ({
           </p>
         </div>
         
+        {/* Mini Calendar - Always show */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-accent" />
+                Calendar View
+              </div>
+              <div className="flex items-center gap-1">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 w-8 p-0"
+                  onClick={() => navigateCalendarMonth('prev')}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <div className="text-sm font-medium px-2">
+                  {currentCalendarDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 w-8 p-0"
+                  onClick={() => navigateCalendarMonth('next')}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="grid grid-cols-7 gap-1 text-xs text-center text-muted-foreground font-medium">
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                  <div key={day} className="py-1">{day}</div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-1">
+                {renderMiniCalendar()}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Show recycler if there are deleted habits */}
         {deletedHabits.length > 0 && <Card>
             <CardHeader>
@@ -394,6 +439,89 @@ const Dashboard = ({
               </Button>
             </CardContent>
           </Card>}
+
+        {/* Edit Habit Dialog - Always render */}
+        <Dialog open={!!editingHabit} onOpenChange={() => setEditingHabit(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Edit Habit</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit-habit-name">Habit Name</Label>
+                <Input
+                  id="edit-habit-name"
+                  value={editHabitName}
+                  onChange={(e) => setEditHabitName(e.target.value)}
+                  placeholder="e.g., Morning Exercise"
+                  className="mt-1"
+                />
+              </div>
+              
+              <div>
+                <Label>Frequency</Label>
+                <Select value={editHabitFrequency} onValueChange={(value: 'daily' | 'weekly') => setEditHabitFrequency(value)}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select frequency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="daily">Every day</SelectItem>
+                    <SelectItem value="weekly">Specific days of the week</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {editHabitFrequency === 'weekly' && (
+                <div>
+                  <Label>Select Days</Label>
+                  <div className="grid grid-cols-7 gap-2 mt-2">
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
+                      <div key={day} className="flex flex-col items-center gap-1">
+                        <Checkbox
+                          id={`edit-day-${index}`}
+                          checked={editHabitWeeklyDays.includes(index)}
+                          onCheckedChange={() => toggleEditWeeklyDay(index)}
+                        />
+                        <Label htmlFor={`edit-day-${index}`} className="text-xs">{day}</Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <div>
+                <Label>Choose Icon</Label>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {habitIcons.map(icon => (
+                    <button
+                      key={icon}
+                      onClick={() => setEditHabitIcon(icon)}
+                      className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-all ${
+                        editHabitIcon === icon 
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'bg-muted hover:bg-muted-foreground/20'
+                      }`}
+                    >
+                      {icon}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={saveEditHabit} 
+                  className="flex-1"
+                  disabled={!editHabitName.trim() || (editHabitFrequency === 'weekly' && editHabitWeeklyDays.length === 0)}
+                >
+                  Save Changes
+                </Button>
+                <Button variant="outline" onClick={() => setEditingHabit(null)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>;
   }
   return <div className="w-full max-w-6xl mx-auto p-6 space-y-6">
