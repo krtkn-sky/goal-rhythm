@@ -70,11 +70,12 @@ const Index = () => {
     setHabits(updatedHabits);
   };
 
-  const editHabit = (habitId: string, updatedHabit: Habit) => {
-    const updatedHabits = habits.map(habit => 
-      habit.id === habitId ? updatedHabit : habit
-    );
-    setHabits(updatedHabits);
+  const permanentlyDeleteHabit = (habitId: string) => {
+    setDeletedHabits(prev => prev.filter(h => h.id !== habitId));
+  };
+
+  const deleteAllHabits = () => {
+    setDeletedHabits([]);
   };
 
   const toggleDarkMode = () => {
@@ -150,7 +151,8 @@ const Index = () => {
               streakData={streakData} 
               deletedHabits={deletedHabits}
               onRestoreHabit={restoreHabit}
-              onEditHabit={editHabit}
+              onDeleteHabit={permanentlyDeleteHabit}
+              onDeleteAllHabits={deleteAllHabits}
             />
           </TabsContent>
         </Tabs>
