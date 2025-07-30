@@ -353,76 +353,80 @@ const HabitCalendar = ({
           {/* Day completion indicator */}
           {!isFuture && dayStatus !== 'none' && renderDayIndicator(dayStatus)}
           
-          {/* Unified Dropdown for all habits */}
-          {selectedHabits.length > 0 && !isFuture && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="absolute top-1 right-1 w-6 h-6 p-0 opacity-60 hover:opacity-100"
-                >
-                  <List className="w-3 h-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-64 bg-popover border border-border shadow-lg z-50">
-                {selectedHabits.filter(habit => {
-                  // For weekly habits, only show on designated days
-                  if (habit.frequency === 'weekly' && habit.weeklyDays) {
-                    return habit.weeklyDays.includes(dayOfWeek);
-                  }
-                  // For daily habits, show every day
-                  return habit.frequency === 'daily';
-                }).map(habit => {
-                  const status = getHabitStatusForDate(habit.id, dateString);
-                  return (
-                    <div key={habit.id} className="p-2 border-b border-border/50 last:border-b-0">
-                      <div className="flex items-center gap-2 mb-2 cursor-pointer" onClick={() => openEditHabit(habit)}>
-                        <span className="text-lg">{habit.icon}</span>
-                        <span className="font-medium text-sm flex-1">{habit.name}</span>
-                        <div className={`w-2 h-2 rounded-full ${
-                          status === true ? 'bg-success' : status === false ? 'bg-destructive' : 'bg-muted-foreground'
-                        }`} />
-                      </div>
-                      <div className="flex gap-1">
-                        <Button
-                          size="sm"
-                          variant={status === true ? "default" : "outline"}
-                          onClick={() => toggleHabitStatus(habit.id, dateString, true)}
-                          className="flex-1 h-7 text-xs"
-                        >
-                          <Check className="w-3 h-3 mr-1" />
-                          Done
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={status === false ? "destructive" : "outline"}
-                          onClick={() => toggleHabitStatus(habit.id, dateString, false)}
-                          className="flex-1 h-7 text-xs"
-                        >
-                          <Minus className="w-3 h-3 mr-1" />
-                          Miss
-                        </Button>
-                        {status !== undefined && (
+          {/* Unified Dropdown for all habits - only show if there are habits for this day */}
+          {(() => {
+            const habitsForThisDay = selectedHabits.filter(habit => {
+              // For weekly habits, only show on designated days
+              if (habit.frequency === 'weekly' && habit.weeklyDays) {
+                return habit.weeklyDays.includes(dayOfWeek);
+              }
+              // For daily habits, show every day
+              return habit.frequency === 'daily';
+            });
+            
+            return habitsForThisDay.length > 0 && !isFuture && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute top-1 right-1 w-6 h-6 p-0 opacity-60 hover:opacity-100"
+                  >
+                    <List className="w-3 h-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-64 bg-popover border border-border shadow-lg z-50">
+                  {habitsForThisDay.map(habit => {
+                    const status = getHabitStatusForDate(habit.id, dateString);
+                    return (
+                      <div key={habit.id} className="p-2 border-b border-border/50 last:border-b-0">
+                        <div className="flex items-center gap-2 mb-2 cursor-pointer" onClick={() => openEditHabit(habit)}>
+                          <span className="text-lg">{habit.icon}</span>
+                          <span className="font-medium text-sm flex-1">{habit.name}</span>
+                          <div className={`w-2 h-2 rounded-full ${
+                            status === true ? 'bg-success' : status === false ? 'bg-destructive' : 'bg-muted-foreground'
+                          }`} />
+                        </div>
+                        <div className="flex gap-1">
                           <Button
                             size="sm"
-                            variant="ghost"
-                            onClick={() => {
-                              const updatedData = streakData.filter(d => !(d.habitId === habit.id && d.date === dateString));
-                              onStreakDataChange?.(updatedData);
-                            }}
-                            className="h-7 w-7 p-0"
+                            variant={status === true ? "default" : "outline"}
+                            onClick={() => toggleHabitStatus(habit.id, dateString, true)}
+                            className="flex-1 h-7 text-xs"
                           >
-                            <X className="w-3 h-3" />
+                            <Check className="w-3 h-3 mr-1" />
+                            Done
                           </Button>
-                        )}
+                          <Button
+                            size="sm"
+                            variant={status === false ? "destructive" : "outline"}
+                            onClick={() => toggleHabitStatus(habit.id, dateString, false)}
+                            className="flex-1 h-7 text-xs"
+                          >
+                            <Minus className="w-3 h-3 mr-1" />
+                            Miss
+                          </Button>
+                          {status !== undefined && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                const updatedData = streakData.filter(d => !(d.habitId === habit.id && d.date === dateString));
+                                onStreakDataChange?.(updatedData);
+                              }}
+                              className="h-7 w-7 p-0"
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            );
+          })()}
           
         </div>
       );
@@ -436,16 +440,16 @@ const HabitCalendar = ({
     year: 'numeric' 
   });
 
-  // If no habits, show a gentle message with mini calendar
+  // Always show calendar - if no habits, show uninteractive calendar with message
   if (selectedHabits.length === 0) {
     return (
       <div className="w-full max-w-6xl mx-auto p-6 space-y-6">
-        <div className="text-center py-12">
-          <div className="w-20 h-20 rounded-full bg-gradient-success/20 flex items-center justify-center mx-auto mb-6">
-            <Target className="w-10 h-10 text-muted-foreground" />
+        <div className="text-center py-8">
+          <div className="w-16 h-16 rounded-full bg-gradient-success/20 flex items-center justify-center mx-auto mb-4">
+            <Target className="w-8 h-8 text-muted-foreground" />
           </div>
-          <h2 className="text-2xl font-bold text-foreground mb-4">No habits yet!</h2>
-          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+          <h2 className="text-xl font-bold text-foreground mb-2">No habits yet!</h2>
+          <p className="text-muted-foreground mb-4 max-w-md mx-auto">
             Click "Add Habit" to start tracking your goals
           </p>
           
@@ -538,47 +542,82 @@ const HabitCalendar = ({
           </Dialog>
         </div>
         
-        {/* Mini Calendar */}
+        {/* Full Calendar - same as when habits exist but uninteractive */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
+          <CardHeader className="pb-4">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-xl">{monthYear}</CardTitle>
               <div className="flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-accent" />
-                Calendar View
-              </div>
-              <div className="flex items-center gap-1">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-8 w-8 p-0"
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => navigateMonth('prev')}
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
-                <div className="text-sm font-medium px-2">
-                  {currentDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                </div>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-8 w-8 p-0"
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => navigateMonth('next')}
                 >
                   <ChevronRight className="w-4 h-4" />
                 </Button>
               </div>
-            </CardTitle>
+            </div>
           </CardHeader>
+          
           <CardContent>
-            <div className="space-y-2">
-              <div className="grid grid-cols-7 gap-1 text-xs text-center text-muted-foreground font-medium">
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                  <div key={day} className="py-1">{day}</div>
-                ))}
-              </div>
-              <div className="grid grid-cols-7 gap-1">
-                {renderMiniCalendarDays()}
-              </div>
+            <div className="text-center py-4 mb-6 text-muted-foreground">
+              <Target className="w-8 h-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">Your calendar awaits your first habit! 🌟</p>
+            </div>
+
+            {/* Calendar Grid - uninteractive */}
+            <div className="grid grid-cols-7 gap-0 border border-border rounded-lg overflow-hidden opacity-60">
+              {/* Day headers */}
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                <div key={day} className="h-10 bg-muted flex items-center justify-center text-sm font-medium text-muted-foreground border-r border-border last:border-r-0">
+                  {day}
+                </div>
+              ))}
+              
+              {/* Calendar days - simplified for no habits */}
+              {(() => {
+                const daysInMonth = getDaysInMonth(currentDate);
+                const firstDay = getFirstDayOfMonth(currentDate);
+                const days = [];
+                const today = new Date();
+                const todayString = formatDate(today);
+
+                // Empty cells for previous month
+                for (let i = 0; i < firstDay; i++) {
+                  days.push(<div key={`empty-${i}`} className="h-20 border border-border/30"></div>);
+                }
+
+                // Calendar days
+                for (let day = 1; day <= daysInMonth; day++) {
+                  const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+                  const dateString = formatDate(date);
+                  const isToday = dateString === todayString;
+
+                  days.push(
+                    <div
+                      key={day}
+                      className={`h-20 border border-border/30 p-1 transition-colors ${
+                        isToday ? 'bg-primary/10 ring-2 ring-primary/20' : 'bg-card'
+                      }`}
+                    >
+                      <div className={`text-sm font-medium ${
+                        isToday ? 'text-primary' : 'text-foreground'
+                      }`}>
+                        {day}
+                      </div>
+                    </div>
+                  );
+                }
+
+                return days;
+              })()}
             </div>
           </CardContent>
         </Card>

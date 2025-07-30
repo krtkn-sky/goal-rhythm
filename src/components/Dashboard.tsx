@@ -3,13 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Flame, Trophy, Target, TrendingUp, Calendar, Award, RotateCcw, ArrowLeft, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Flame, Trophy, Target, TrendingUp, Award, RotateCcw, ArrowLeft, Trash2 } from 'lucide-react';
+
 interface DeletedHabit {
   id: string;
   name: string;
@@ -22,6 +18,7 @@ interface DeletedHabit {
   frequency?: 'daily' | 'weekly';
   weeklyDays?: number[];
 }
+
 interface DashboardProps {
   habits: Array<{
     id: string;
@@ -42,6 +39,7 @@ interface DashboardProps {
   onDeleteHabit?: (habitId: string) => void;
   onDeleteAllHabits?: () => void;
 }
+
 const Dashboard = ({
   habits = [],
   streakData = [],
@@ -51,7 +49,7 @@ const Dashboard = ({
   onDeleteAllHabits
 }: DashboardProps) => {
   const [showRecycler, setShowRecycler] = useState(false);
-  const [currentCalendarDate, setCurrentCalendarDate] = useState(new Date());
+
   // Calculate current streaks for each habit
   const calculateCurrentStreak = (habitId: string) => {
     const today = new Date();
@@ -70,14 +68,15 @@ const Dashboard = ({
     }
     return streak;
   };
+  
   const currentStreaks = habits.map(habit => ({
     name: habit.name,
     current: calculateCurrentStreak(habit.id),
     best: Math.max(calculateCurrentStreak(habit.id), 0),
-    // For now, same as current
     icon: habit.icon,
     color: 'bg-primary'
   }));
+  
   const achievements = [{
     name: 'First Step',
     description: 'Track your first habit',
@@ -120,7 +119,9 @@ const Dashboard = ({
       };
     });
   };
+  
   const weeklyProgress = getThisWeeksProgress();
+  
   const getStreakColor = (current: number) => {
     if (current >= 30) return 'text-primary';
     if (current >= 14) return 'text-success';
@@ -133,6 +134,7 @@ const Dashboard = ({
   const totalHabitsToday = habits.length;
   const completedToday = habits.filter(habit => streakData.some(d => d.habitId === habit.id && d.date === today && d.completed)).length;
   const todayProgress = totalHabitsToday > 0 ? completedToday / totalHabitsToday * 100 : 0;
+  
   const formatDateString = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -149,70 +151,10 @@ const Dashboard = ({
     return diffDays;
   };
 
-
-  // Calendar rendering functions
-  const getDaysInMonth = (date: Date) => {
-    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-  };
-
-  const getFirstDayOfMonth = (date: Date) => {
-    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
-  };
-
-  const formatDateToString = (date: Date) => {
-    return date.toISOString().split('T')[0];
-  };
-
-  const renderMiniCalendar = () => {
-    const daysInMonth = getDaysInMonth(currentCalendarDate);
-    const firstDay = getFirstDayOfMonth(currentCalendarDate);
-    const days = [];
-    const today = new Date();
-    const todayString = formatDateToString(today);
-
-    // Empty cells for previous month
-    for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="h-8 border border-border/20"></div>);
-    }
-
-    // Calendar days
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(currentCalendarDate.getFullYear(), currentCalendarDate.getMonth(), day);
-      const dateString = formatDateToString(date);
-      const isToday = dateString === todayString;
-
-      days.push(
-        <div
-          key={day}
-          className={`h-8 border border-border/20 flex items-center justify-center text-xs transition-colors ${
-            isToday 
-              ? 'bg-primary/10 text-primary border-primary/30 font-medium' 
-              : 'bg-card text-muted-foreground hover:bg-muted/50'
-          }`}
-        >
-          {day}
-        </div>
-      );
-    }
-
-    return days;
-  };
-
-  const navigateCalendarMonth = (direction: 'prev' | 'next') => {
-    setCurrentCalendarDate(prev => {
-      const newDate = new Date(prev);
-      if (direction === 'prev') {
-        newDate.setMonth(newDate.getMonth() - 1);
-      } else {
-        newDate.setMonth(newDate.getMonth() + 1);
-      }
-      return newDate;
-    });
-  };
-
   // Show recycler view if requested
   if (showRecycler) {
-    return <div className="w-full max-w-6xl mx-auto p-6 space-y-6">
+    return (
+      <div className="w-full max-w-6xl mx-auto p-6 space-y-6">
         <div className="flex items-center gap-4 mb-6">
           <Button variant="ghost" size="sm" onClick={() => setShowRecycler(false)} className="flex items-center gap-2">
             <ArrowLeft className="w-4 h-4" />
@@ -224,7 +166,8 @@ const Dashboard = ({
           </div>
         </div>
 
-        {deletedHabits.length === 0 ? <Card>
+        {deletedHabits.length === 0 ? (
+          <Card>
             <CardContent className="text-center py-12">
               <div className="w-20 h-20 rounded-full bg-muted/20 flex items-center justify-center mx-auto mb-6">
                 <Trash2 className="w-10 h-10 text-muted-foreground" />
@@ -234,7 +177,9 @@ const Dashboard = ({
                 When you delete habits, they'll appear here for easy restoration.
               </p>
             </CardContent>
-          </Card> : <Card>
+          </Card>
+        ) : (
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -268,7 +213,8 @@ const Dashboard = ({
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {deletedHabits.map((habit, index) => <div key={`${habit.id}-${habit.deletedAt}`} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50">
+                {deletedHabits.map((habit) => (
+                  <div key={`${habit.id}-${habit.deletedAt}`} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50">
                     <div className="flex items-center gap-3">
                       <div className="text-2xl opacity-60">{habit.icon}</div>
                       <div>
@@ -314,7 +260,8 @@ const Dashboard = ({
                          </Button>
                        </div>
                     </div>
-                  </div>)}
+                  </div>
+                ))}
               </div>
               
               <div className="mt-4 p-3 bg-gradient-subtle rounded-lg border border-border/30">
@@ -323,13 +270,16 @@ const Dashboard = ({
                 </p>
               </div>
             </CardContent>
-          </Card>}
-      </div>;
+          </Card>
+        )}
+      </div>
+    );
   }
 
   // Show dashboard with recycler option even when no habits
   if (habits.length === 0) {
-    return <div className="w-full max-w-6xl mx-auto p-6 space-y-6">
+    return (
+      <div className="w-full max-w-6xl mx-auto p-6 space-y-6">
         <div className="text-center py-12">
           <div className="w-20 h-20 rounded-full bg-gradient-success/20 flex items-center justify-center mx-auto mb-6">
             <Target className="w-10 h-10 text-muted-foreground" />
@@ -339,7 +289,6 @@ const Dashboard = ({
             Add your first habit to begin tracking your progress and building positive streaks.
           </p>
         </div>
-        
 
         {/* Achievements Section */}
         <Card>
@@ -357,7 +306,8 @@ const Dashboard = ({
         </Card>
         
         {/* Habit Recycler Section */}
-        {deletedHabits.length > 0 && <Card>
+        {deletedHabits.length > 0 && (
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Trash2 className="w-5 h-5 text-muted-foreground" />
@@ -373,13 +323,17 @@ const Dashboard = ({
                 </div>
               </Button>
             </CardContent>
-          </Card>}
-      </div>;
+          </Card>
+        )}
+      </div>
+    );
   }
   
-  return <div className="w-full max-w-6xl mx-auto p-6 space-y-6">
+  return (
+    <div className="w-full max-w-6xl mx-auto p-6 space-y-6">
       {/* Overview Cards */}
-      {habits.length > 0 && <>
+      {habits.length > 0 && (
+        <>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card className="bg-gradient-success">
               <CardContent className="p-6">
@@ -437,7 +391,7 @@ const Dashboard = ({
                     </p>
                   </div>
                   <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                    <Calendar className="w-6 h-6 text-muted-foreground" />
+                    <TrendingUp className="w-6 h-6 text-muted-foreground" />
                   </div>
                 </div>
               </CardContent>
@@ -454,73 +408,55 @@ const Dashboard = ({
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {currentStreaks.map((streak, index) => {
-                  const habit = habits.find(h => h.name === streak.name);
-                  return (
-                    <div 
-                      key={index} 
-                      className="flex items-center justify-between p-4 bg-gradient-subtle rounded-lg"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="text-2xl">{streak.icon}</div>
-                        <div>
-                          <h4 className="font-semibold text-foreground">{streak.name}</h4>
-                          <p className="text-sm text-muted-foreground">Best: {streak.best} days</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className={`text-2xl font-bold ${getStreakColor(streak.current)}`}>
-                          {streak.current}
-                        </div>
-                        <p className="text-sm text-muted-foreground">days</p>
+                {currentStreaks.map((streak, index) => (
+                  <div 
+                    key={index} 
+                    className="flex items-center justify-between p-4 bg-gradient-subtle rounded-lg"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="text-2xl">{streak.icon}</div>
+                      <div>
+                        <h4 className="font-semibold text-foreground">{streak.name}</h4>
+                        <p className="text-sm text-muted-foreground">Best: {streak.best} days</p>
                       </div>
                     </div>
-                  );
-                })}
+                    <div className="text-right">
+                      <div className={`text-2xl font-bold ${getStreakColor(streak.current)}`}>
+                        {streak.current}
+                      </div>
+                      <p className="text-sm text-muted-foreground">days</p>
+                    </div>
+                  </div>
+                ))}
               </CardContent>
             </Card>
 
-            {/* Mini Calendar */}
+            {/* This Week Progress */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-accent" />
-                    Calendar View
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-8 w-8 p-0"
-                      onClick={() => navigateCalendarMonth('prev')}
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </Button>
-                    <div className="text-sm font-medium px-2">
-                      {currentCalendarDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-8 w-8 p-0"
-                      onClick={() => navigateCalendarMonth('next')}
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </Button>
-                  </div>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-accent" />
+                  This Week
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  <div className="grid grid-cols-7 gap-1 text-xs text-center text-muted-foreground font-medium">
-                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                      <div key={day} className="py-1">{day}</div>
-                    ))}
-                  </div>
-                  <div className="grid grid-cols-7 gap-1">
-                    {renderMiniCalendar()}
-                  </div>
+                <div className="space-y-3">
+                  {weeklyProgress.map((day, index) => (
+                    <div key={index} className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 text-sm font-medium text-muted-foreground">{day.day}</div>
+                        <div className="flex-1">
+                          <Progress 
+                            value={day.total > 0 ? (day.completed / day.total) * 100 : 0} 
+                            className="h-2"
+                          />
+                        </div>
+                      </div>
+                      <div className="text-sm text-muted-foreground min-w-12 text-right">
+                        {day.completed}/{day.total}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -536,7 +472,8 @@ const Dashboard = ({
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {achievements.map((achievement, index) => <div key={index} className={`p-4 rounded-lg border transition-all ${achievement.unlocked ? 'bg-gradient-achievement border-accent shadow-sm' : 'bg-muted/50 border-border opacity-60'}`}>
+                {achievements.map((achievement, index) => (
+                  <div key={index} className={`p-4 rounded-lg border transition-all ${achievement.unlocked ? 'bg-gradient-achievement border-accent shadow-sm' : 'bg-muted/50 border-border opacity-60'}`}>
                     <div className="flex items-start gap-3">
                       <div className="text-2xl">{achievement.icon}</div>
                       <div className="flex-1">
@@ -547,11 +484,14 @@ const Dashboard = ({
                           {achievement.description}
                         </p>
                       </div>
-                      {achievement.unlocked && <Badge variant="secondary" className="bg-accent-foreground/20 text-accent-foreground">
+                      {achievement.unlocked && (
+                        <Badge variant="secondary" className="bg-accent-foreground/20 text-accent-foreground">
                           Unlocked
-                        </Badge>}
+                        </Badge>
+                      )}
                     </div>
-                  </div>)}
+                  </div>
+                ))}
               </div>
               
               {/* Habit Recycler Section - always show if there are deleted habits */}
@@ -574,8 +514,10 @@ const Dashboard = ({
               </div>
             </CardContent>
           </Card>
-        </>}
-
-    </div>;
+        </>
+      )}
+    </div>
+  );
 };
+
 export default Dashboard;
