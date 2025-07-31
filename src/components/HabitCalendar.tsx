@@ -458,8 +458,13 @@ const HabitCalendar = ({
             <Calendar className="w-5 h-5 text-success-foreground" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Goal Rhythm</h1>
-            <p className="text-muted-foreground">Track your journey, celebrate your progress</p>
+            <h1 className="text-2xl font-bold text-foreground">Habit Calendar</h1>
+            <p className="text-muted-foreground">
+              {selectedHabits.length === 0 
+                ? "Add your first habit to start tracking your journey" 
+                : "Track your journey, celebrate your progress"
+              }
+            </p>
           </div>
         </div>
         
@@ -676,7 +681,11 @@ const HabitCalendar = ({
                   <Badge 
                     variant="secondary" 
                     className="text-sm pr-8 cursor-pointer hover:bg-muted-foreground/20 transition-colors"
-                    onClick={() => openEditHabit(habit)}
+                    onClick={(e) => {
+                      if (!(e.target as HTMLElement).closest('button')) {
+                        openEditHabit(habit);
+                      }
+                    }}
                   >
                     <span className="mr-1">{habit.icon}</span>
                     {habit.name}
