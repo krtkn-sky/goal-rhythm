@@ -91,6 +91,13 @@ const HabitCalendar = ({
 
   const addNewHabit = () => {
     if (newHabitName.trim() && (newHabitFrequency === 'daily' || newHabitWeeklyDays.length > 0)) {
+      // Check for duplicate names
+      const existingHabit = selectedHabits.find(h => h.name.toLowerCase() === newHabitName.trim().toLowerCase());
+      if (existingHabit) {
+        alert("Habit with the same name exists, try using a different emoji");
+        return;
+      }
+      
       const newHabit: Habit = {
         id: Date.now().toString(),
         name: newHabitName.trim(),
@@ -328,7 +335,7 @@ const HabitCalendar = ({
       const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
       const dateString = formatDate(date);
       const today = new Date();
-      const isToday = dateString === formatDate(today);
+      const isToday = date.toDateString() === today.toDateString();
       const isFuture = date > today;
       const dayStatus = getDayCompletionStatus(dateString);
       const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday

@@ -91,12 +91,12 @@ const Index = () => {
       <nav className="border-b border-border bg-card/95 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-gradient-success flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-success-foreground" />
-              </div>
-              <h1 className="text-xl font-bold text-foreground">Goal Rhythm</h1>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-gradient-success flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-success-foreground" />
             </div>
+            <h1 className="text-xl font-bold text-foreground">Goal Rhythm</h1>
+          </div>
             
             <div className="flex items-center gap-4">
               <Button 
