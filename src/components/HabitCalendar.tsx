@@ -301,15 +301,18 @@ const HabitCalendar = ({
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
       const dateString = formatDate(date);
-      const isToday = dateString === todayString;
+      const todayDate = new Date();
+      const isToday = date.getDate() === todayDate.getDate() && 
+                      date.getMonth() === todayDate.getMonth() && 
+                      date.getFullYear() === todayDate.getFullYear();
 
       days.push(
         <div
           key={day}
-          className={`h-8 border border-border/20 flex items-center justify-center text-xs transition-colors ${
+          className={`h-8 border flex items-center justify-center text-xs transition-colors ${
             isToday 
-              ? 'bg-primary/10 text-primary border-primary/30 font-medium' 
-              : 'bg-card text-muted-foreground hover:bg-muted/50'
+              ? 'bg-primary/10 text-primary border-primary border-2 font-bold' 
+              : 'border-border/20 bg-card text-muted-foreground hover:bg-muted/50'
           }`}
         >
           {day}
@@ -334,9 +337,10 @@ const HabitCalendar = ({
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
       const dateString = formatDate(date);
-      const today = new Date();
-      const todayString = formatDate(today);
-      const isToday = dateString === todayString;
+      const todayDate = new Date();
+      const isToday = date.getDate() === todayDate.getDate() && 
+                      date.getMonth() === todayDate.getMonth() && 
+                      date.getFullYear() === todayDate.getFullYear();
       const isFuture = date > today;
       const dayStatus = getDayCompletionStatus(dateString);
       const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
@@ -349,7 +353,7 @@ const HabitCalendar = ({
               ? 'bg-muted/50 opacity-50 cursor-not-allowed' 
               : 'hover:bg-muted/50 cursor-pointer'
           } ${
-            isToday ? 'bg-primary/20 ring-2 ring-primary border-primary' : 'bg-card'
+            isToday ? 'bg-primary/20 border-primary border-2' : 'bg-card'
           }`}
         >
           <div className={`text-sm font-medium mb-1 ${
@@ -642,14 +646,16 @@ const HabitCalendar = ({
               // Calendar days - simplified for no habits
               for (let day = 1; day <= daysInMonth; day++) {
                 const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-                const dateString = formatDate(date);
-                const isToday = dateString === todayString;
+                const todayDate = new Date();
+                const isToday = date.getDate() === todayDate.getDate() && 
+                                date.getMonth() === todayDate.getMonth() && 
+                                date.getFullYear() === todayDate.getFullYear();
 
                 days.push(
                   <div
                     key={day}
-                    className={`h-20 border border-border/30 p-1 transition-colors ${
-                      isToday ? 'bg-primary/20 ring-2 ring-primary border-primary' : 'bg-card'
+                    className={`h-20 border p-1 transition-colors ${
+                      isToday ? 'bg-primary/20 border-primary border-2' : 'border-border/30 bg-card'
                     }`}
                   >
                     <div className={`text-sm font-medium ${
