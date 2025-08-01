@@ -335,7 +335,8 @@ const HabitCalendar = ({
       const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
       const dateString = formatDate(date);
       const today = new Date();
-      const isToday = date.toDateString() === today.toDateString();
+      const todayString = formatDate(today);
+      const isToday = dateString === todayString;
       const isFuture = date > today;
       const dayStatus = getDayCompletionStatus(dateString);
       const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
@@ -348,11 +349,11 @@ const HabitCalendar = ({
               ? 'bg-muted/50 opacity-50 cursor-not-allowed' 
               : 'hover:bg-muted/50 cursor-pointer'
           } ${
-            isToday ? 'bg-gradient-subtle ring-2 ring-primary/20' : 'bg-card'
+            isToday ? 'bg-primary/20 ring-2 ring-primary border-primary' : 'bg-card'
           }`}
         >
           <div className={`text-sm font-medium mb-1 ${
-            isFuture ? 'text-muted-foreground' : isToday ? 'text-primary' : 'text-foreground'
+            isFuture ? 'text-muted-foreground' : isToday ? 'text-primary font-bold' : 'text-foreground'
           }`}>
             {day}
           </div>
@@ -469,93 +470,20 @@ const HabitCalendar = ({
         </div>
         
         <div className="flex items-center gap-2">
-          <Dialog open={isAddHabitOpen} onOpenChange={setIsAddHabitOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Habit
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Add New Habit</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="habit-name">Habit Name</Label>
-                  <Input
-                    id="habit-name"
-                    value={newHabitName}
-                    onChange={(e) => setNewHabitName(e.target.value)}
-                    placeholder="e.g., Morning Exercise"
-                    className="mt-1"
-                  />
-                </div>
-                
-                <div>
-                  <Label>Frequency</Label>
-                  <Select value={newHabitFrequency} onValueChange={(value: 'daily' | 'weekly') => setNewHabitFrequency(value)}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Select frequency" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="daily">Every day</SelectItem>
-                      <SelectItem value="weekly">Specific days of the week</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {newHabitFrequency === 'weekly' && (
-                  <div>
-                    <Label>Select Days</Label>
-                    <div className="grid grid-cols-7 gap-2 mt-2">
-                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
-                        <div key={day} className="flex flex-col items-center gap-1">
-                          <Checkbox
-                            id={`day-${index}`}
-                            checked={newHabitWeeklyDays.includes(index)}
-                            onCheckedChange={() => toggleWeeklyDay(index)}
-                          />
-                          <Label htmlFor={`day-${index}`} className="text-xs">{day}</Label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                <div>
-                  <Label>Choose Icon</Label>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {habitIcons.map(icon => (
-                      <button
-                        key={icon}
-                        onClick={() => setNewHabitIcon(icon)}
-                        className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-all ${
-                          newHabitIcon === icon 
-                            ? 'bg-primary text-primary-foreground' 
-                            : 'bg-muted hover:bg-muted-foreground/20'
-                        }`}
-                      >
-                        {icon}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={addNewHabit} 
-                    className="flex-1"
-                    disabled={!newHabitName.trim() || (newHabitFrequency === 'weekly' && newHabitWeeklyDays.length === 0)}
-                  >
-                    Add Habit
-                  </Button>
-                  <Button variant="outline" onClick={() => setIsAddHabitOpen(false)}>
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigateMonth('prev')}
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigateMonth('next')}
+          >
+            <ChevronRight className="w-4 h-4" />
+          </Button>
         </div>
       </div>
 
@@ -565,14 +493,13 @@ const HabitCalendar = ({
           <div className="flex items-center justify-between">
             <CardTitle className="text-xl">{monthYear}</CardTitle>
             <div className="flex items-center gap-2">
-              {selectedHabits.length === 0 && (
-                <Dialog open={isAddHabitOpen} onOpenChange={setIsAddHabitOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Habit
-                    </Button>
-                  </DialogTrigger>
+              <Dialog open={isAddHabitOpen} onOpenChange={setIsAddHabitOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Plus className="w-4 h-4 mr-2" />
+                    {selectedHabits.length === 0 ? "Add Your First Habit" : "Add Habit"}
+                  </Button>
+                </DialogTrigger>
                   <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                       <DialogTitle>Add New Habit</DialogTitle>
@@ -653,21 +580,6 @@ const HabitCalendar = ({
                     </div>
                   </DialogContent>
                 </Dialog>
-              )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigateMonth('prev')}
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigateMonth('next')}
-              >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
             </div>
           </div>
         </CardHeader>
@@ -737,11 +649,11 @@ const HabitCalendar = ({
                   <div
                     key={day}
                     className={`h-20 border border-border/30 p-1 transition-colors ${
-                      isToday ? 'bg-primary/10 ring-2 ring-primary/20' : 'bg-card'
+                      isToday ? 'bg-primary/20 ring-2 ring-primary border-primary' : 'bg-card'
                     }`}
                   >
                     <div className={`text-sm font-medium ${
-                      isToday ? 'text-primary' : 'text-foreground'
+                      isToday ? 'text-primary font-bold' : 'text-foreground'
                     }`}>
                       {day}
                     </div>
