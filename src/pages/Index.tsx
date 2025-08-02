@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import HabitCalendar from '@/components/HabitCalendar';
 import Dashboard from '@/components/Dashboard';
-import { Calendar, BarChart3, User, Sparkles, Moon, Sun } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { Calendar, BarChart3, User, Sparkles, Moon, Sun, LogOut } from 'lucide-react';
 
 interface Habit {
   id: string;
@@ -40,6 +42,9 @@ const Index = () => {
   const [habits, setHabits] = useState<Habit[]>([]);
   const [streakData, setStreakData] = useState<StreakData[]>([]);
   const [deletedHabits, setDeletedHabits] = useState<DeletedHabit[]>([]);
+  
+  const { user, signOut, loading } = useAuth();
+  const navigate = useNavigate();
 
   // Initialize dark mode from localStorage
   useEffect(() => {
@@ -85,6 +90,27 @@ const Index = () => {
     document.documentElement.classList.toggle('dark', newDarkMode);
   };
 
+  const handleAuthAction = () => {
+    if (user) {
+      signOut();
+    } else {
+      navigate('/auth');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 rounded-full bg-gradient-success flex items-center justify-center mx-auto mb-4">
+            <Sparkles className="w-4 h-4 text-success-foreground" />
+          </div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-subtle">
       {/* Navigation Header */}
@@ -111,9 +137,18 @@ const Index = () => {
                   <Moon className="w-4 h-4" />
                 )}
               </Button>
-              <Button variant="ghost" size="sm">
-                <User className="w-4 h-4 mr-2" />
-                Sign In
+              <Button variant="ghost" size="sm" onClick={handleAuthAction}>
+                {user ? (
+                  <>
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </>
+                ) : (
+                  <>
+                    <User className="w-4 h-4 mr-2" />
+                    Sign Up / Login
+                  </>
+                )}
               </Button>
             </div>
           </div>
