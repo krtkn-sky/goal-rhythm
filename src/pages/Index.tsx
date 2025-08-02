@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import HabitCalendar from '@/components/HabitCalendar';
 import Dashboard from '@/components/Dashboard';
 import { useAuth } from '@/hooks/useAuth';
+import { useHabits } from '@/hooks/useHabits';
 import { Calendar, BarChart3, User, Sparkles, Moon, Sun, LogOut } from 'lucide-react';
 
 interface Habit {
@@ -39,11 +40,21 @@ interface DeletedHabit {
 const Index = () => {
   const [activeTab, setActiveTab] = useState('calendar');
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [habits, setHabits] = useState<Habit[]>([]);
-  const [streakData, setStreakData] = useState<StreakData[]>([]);
-  const [deletedHabits, setDeletedHabits] = useState<DeletedHabit[]>([]);
   
-  const { user, signOut, loading } = useAuth();
+  const { user, userProfile, signOut, loading } = useAuth();
+  const { 
+    habits, 
+    streakData, 
+    deletedHabits, 
+    loading: habitsLoading,
+    setHabits,
+    setStreakData,
+    setDeletedHabits,
+    addHabit,
+    deleteHabit: deleteHabitDB,
+    restoreHabit: restoreHabitDB,
+    toggleHabitCompletion
+  } = useHabits();
   const navigate = useNavigate();
 
   // Initialize dark mode from localStorage
@@ -54,25 +65,7 @@ const Index = () => {
   }, []);
 
   const restoreHabit = (deletedHabit: DeletedHabit) => {
-    // Remove from deleted habits
-    const updatedDeletedHabits = deletedHabits.filter(h => 
-      !(h.id === deletedHabit.id && h.deletedAt === deletedHabit.deletedAt)
-    );
-    setDeletedHabits(updatedDeletedHabits);
-
-    // Add back to active habits with new ID to avoid conflicts
-    const restoredHabit: Habit = {
-      id: Date.now().toString(), // New ID
-      name: deletedHabit.name,
-      color: deletedHabit.color,
-      icon: deletedHabit.icon,
-      createdAt: new Date().toISOString(), // New start date
-      frequency: deletedHabit.frequency,
-      weeklyDays: deletedHabit.weeklyDays
-    };
-    
-    const updatedHabits = [...habits, restoredHabit];
-    setHabits(updatedHabits);
+    restoreHabitDB(deletedHabit);
   };
 
   const permanentlyDeleteHabit = (habitId: string) => {
@@ -98,7 +91,7 @@ const Index = () => {
     }
   };
 
-  if (loading) {
+  if (loading || habitsLoading) {
     return (
       <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
         <div className="text-center">
@@ -121,7 +114,12 @@ const Index = () => {
             <div className="w-8 h-8 rounded-full bg-gradient-success flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-success-foreground" />
             </div>
-            <h1 className="text-xl font-bold text-foreground">Goal Rhythm</h1>
+            <div>
+              <h1 className="text-xl font-bold text-foreground">Goal Rhythm</h1>
+              {user && userProfile && (
+                <p className="text-sm text-muted-foreground">Welcome back, {userProfile.username}!</p>
+              )}
+            </div>
           </div>
             
             <div className="flex items-center gap-4">
@@ -177,6 +175,9 @@ const Index = () => {
               onHabitsChange={setHabits}
               onStreakDataChange={setStreakData}
               onDeletedHabitsChange={setDeletedHabits}
+              onAddHabit={user ? addHabit : undefined}
+              onDeleteHabit={user ? deleteHabitDB : undefined}
+              onToggleCompletion={user ? toggleHabitCompletion : undefined}
             />
           </TabsContent>
 

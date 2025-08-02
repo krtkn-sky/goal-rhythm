@@ -24,7 +24,7 @@ const signUpSchema = z.object({
 });
 
 const signInSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  username: z.string().min(1, 'Username is required'),
   password: z.string().min(1, 'Password is required'),
 });
 
@@ -75,7 +75,7 @@ const Auth = () => {
   const signInForm = useForm<SignInFormData>({
     resolver: zodResolver(signInSchema),
     defaultValues: {
-      email: '',
+      username: '',
       password: ''
     }
   });
@@ -138,7 +138,7 @@ const Auth = () => {
   const onSignIn = async (data: SignInFormData) => {
     setIsLoading(true);
     try {
-      const { error } = await signIn(data.email, data.password);
+      const { error } = await signIn(data.username, data.password);
       
       if (error) {
         toast({
@@ -215,15 +215,15 @@ const Auth = () => {
               <TabsContent value="signin" className="space-y-4 mt-6">
                 <form onSubmit={signInForm.handleSubmit(onSignIn)} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
+                    <Label htmlFor="signin-username">Username</Label>
                     <Input
-                      id="signin-email"
-                      type="email"
-                      placeholder="Enter your email"
-                      {...signInForm.register('email')}
+                      id="signin-username"
+                      type="text"
+                      placeholder="Enter your username"
+                      {...signInForm.register('username')}
                     />
-                    {signInForm.formState.errors.email && (
-                      <p className="text-sm text-destructive">{signInForm.formState.errors.email.message}</p>
+                    {signInForm.formState.errors.username && (
+                      <p className="text-sm text-destructive">{signInForm.formState.errors.username.message}</p>
                     )}
                   </div>
                   

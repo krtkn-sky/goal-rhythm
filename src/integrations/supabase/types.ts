@@ -14,6 +14,80 @@ export type Database = {
   }
   public: {
     Tables: {
+      habit_completions: {
+        Row: {
+          completed_date: string
+          created_at: string | null
+          habit_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          completed_date: string
+          created_at?: string | null
+          habit_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          completed_date?: string
+          created_at?: string | null
+          habit_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "habit_completions_habit_id_fkey"
+            columns: ["habit_id"]
+            isOneToOne: false
+            referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      habits: {
+        Row: {
+          color: string
+          created_at: string | null
+          deleted_at: string | null
+          frequency: string | null
+          icon: string
+          id: string
+          is_deleted: boolean | null
+          name: string
+          updated_at: string | null
+          user_id: string
+          weekly_days: number[] | null
+        }
+        Insert: {
+          color: string
+          created_at?: string | null
+          deleted_at?: string | null
+          frequency?: string | null
+          icon: string
+          id?: string
+          is_deleted?: boolean | null
+          name: string
+          updated_at?: string | null
+          user_id: string
+          weekly_days?: number[] | null
+        }
+        Update: {
+          color?: string
+          created_at?: string | null
+          deleted_at?: string | null
+          frequency?: string | null
+          icon?: string
+          id?: string
+          is_deleted?: boolean | null
+          name?: string
+          updated_at?: string | null
+          user_id?: string
+          weekly_days?: number[] | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -49,6 +123,12 @@ export type Database = {
       check_username_availability: {
         Args: { username_input: string }
         Returns: boolean
+      }
+      get_user_by_username: {
+        Args: { username_input: string }
+        Returns: {
+          email: string
+        }[]
       }
     }
     Enums: {

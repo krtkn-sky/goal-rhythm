@@ -40,6 +40,9 @@ interface HabitCalendarProps {
   onHabitsChange?: (habits: Habit[]) => void;
   onStreakDataChange?: (data: StreakData[]) => void;
   onDeletedHabitsChange?: (deleted: DeletedHabit[]) => void;
+  onAddHabit?: (habit: Omit<Habit, 'id'>) => void;
+  onDeleteHabit?: (habitId: string) => void;
+  onToggleCompletion?: (habitId: string, date: string) => void;
 }
 
 const HabitCalendar = ({ 
@@ -48,7 +51,10 @@ const HabitCalendar = ({
   deletedHabits: externalDeletedHabits = [],
   onHabitsChange, 
   onStreakDataChange, 
-  onDeletedHabitsChange 
+  onDeletedHabitsChange,
+  onAddHabit,
+  onDeleteHabit,
+  onToggleCompletion
 }: HabitCalendarProps) => {
   const today = new Date();
   const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
@@ -98,8 +104,7 @@ const HabitCalendar = ({
         return;
       }
       
-      const newHabit: Habit = {
-        id: Date.now().toString(),
+      const newHabit = {
         name: newHabitName.trim(),
         color: habitColors[selectedHabits.length % habitColors.length],
         icon: newHabitIcon,
@@ -107,8 +112,16 @@ const HabitCalendar = ({
         frequency: newHabitFrequency,
         weeklyDays: newHabitFrequency === 'weekly' ? newHabitWeeklyDays : undefined
       };
-      const updatedHabits = [...selectedHabits, newHabit];
-      onHabitsChange?.(updatedHabits);
+      
+      if (onAddHabit) {
+        onAddHabit(newHabit);
+      } else {
+        // Fallback to old method if no onAddHabit provided
+        const habitWithId = { ...newHabit, id: Date.now().toString() };
+        const updatedHabits = [...selectedHabits, habitWithId];
+        onHabitsChange?.(updatedHabits);
+      }
+      
       setNewHabitName('');
       setNewHabitIcon('🎯');
       setNewHabitFrequency('daily');
@@ -153,26 +166,31 @@ const HabitCalendar = ({
   };
 
   const deleteHabit = (habitId: string) => {
-    const habitToDelete = selectedHabits.find(h => h.id === habitId);
-    if (!habitToDelete) return;
+    if (onDeleteHabit) {
+      onDeleteHabit(habitId);
+    } else {
+      // Fallback to old method if no onDeleteHabit provided
+      const habitToDelete = selectedHabits.find(h => h.id === habitId);
+      if (!habitToDelete) return;
 
-    const longestStreak = calculateLongestStreak(habitId);
-    const totalDays = streakData.filter(d => d.habitId === habitId && d.completed).length;
+      const longestStreak = calculateLongestStreak(habitId);
+      const totalDays = streakData.filter(d => d.habitId === habitId && d.completed).length;
 
-    const deletedHabit: DeletedHabit = {
-      ...habitToDelete,
-      deletedAt: new Date().toISOString(),
-      longestStreak,
-      totalDays
-    };
+      const deletedHabit: DeletedHabit = {
+        ...habitToDelete,
+        deletedAt: new Date().toISOString(),
+        longestStreak,
+        totalDays
+      };
 
-    const updatedHabits = selectedHabits.filter(h => h.id !== habitId);
-    const updatedStreakData = streakData.filter(d => d.habitId !== habitId);
-    const updatedDeletedHabits = [...deletedHabits, deletedHabit];
-    
-    onHabitsChange?.(updatedHabits);
-    onStreakDataChange?.(updatedStreakData);
-    onDeletedHabitsChange?.(updatedDeletedHabits);
+      const updatedHabits = selectedHabits.filter(h => h.id !== habitId);
+      const updatedStreakData = streakData.filter(d => d.habitId !== habitId);
+      const updatedDeletedHabits = [...deletedHabits, deletedHabit];
+      
+      onHabitsChange?.(updatedHabits);
+      onStreakDataChange?.(updatedStreakData);
+      onDeletedHabitsChange?.(updatedDeletedHabits);
+    }
     setHabitToDelete(null);
   };
 
@@ -217,10 +235,14 @@ const HabitCalendar = ({
       return; // Don't allow future dates
     }
 
-    const updatedStreakData = streakData.filter(d => !(d.habitId === habitId && d.date === date));
-    updatedStreakData.push({ habitId, date, completed });
-    
-    onStreakDataChange?.(updatedStreakData);
+    if (onToggleCompletion) {
+      onToggleCompletion(habitId, date);
+    } else {
+      // Fallback to old method if no onToggleCompletion provided
+      const updatedStreakData = streakData.filter(d => !(d.habitId === habitId && d.date === date));
+      updatedStreakData.push({ habitId, date, completed });
+      onStreakDataChange?.(updatedStreakData);
+    }
   };
 
   const getDayCompletionStatus = (dateString: string) => {
