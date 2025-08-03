@@ -12,6 +12,7 @@ import { Sparkles, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const signUpSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -187,15 +188,18 @@ const Auth = () => {
   return (
     <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-full bg-gradient-success flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-success-foreground" />
+        {/* Header with Theme Toggle */}
+        <div className="flex justify-between items-start mb-8">
+          <div className="flex-1">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-gradient-success flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-success-foreground" />
+              </div>
+              <h1 className="text-2xl font-bold text-foreground">Goal Rhythm</h1>
             </div>
-            <h1 className="text-2xl font-bold text-foreground">Goal Rhythm</h1>
+            <p className="text-muted-foreground text-center">Track your habits and achieve your goals</p>
           </div>
-          <p className="text-muted-foreground">Track your habits and achieve your goals</p>
+          <ThemeToggle />
         </div>
 
         <Card>

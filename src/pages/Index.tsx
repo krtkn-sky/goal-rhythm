@@ -6,7 +6,8 @@ import HabitCalendar from '@/components/HabitCalendar';
 import Dashboard from '@/components/Dashboard';
 import { useAuth } from '@/hooks/useAuth';
 import { useHabits } from '@/hooks/useHabits';
-import { Calendar, BarChart3, User, Sparkles, Moon, Sun, LogOut } from 'lucide-react';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { Calendar, BarChart3, User, Sparkles, LogOut } from 'lucide-react';
 
 interface Habit {
   id: string;
@@ -123,18 +124,7 @@ const Index = () => {
           </div>
             
             <div className="flex items-center gap-4">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={toggleDarkMode}
-                className="w-9 h-9 p-0"
-              >
-                {isDarkMode ? (
-                  <Sun className="w-4 h-4" />
-                ) : (
-                  <Moon className="w-4 h-4" />
-                )}
-              </Button>
+              <ThemeToggle />
               <Button variant="ghost" size="sm" onClick={handleAuthAction}>
                 {user ? (
                   <>
