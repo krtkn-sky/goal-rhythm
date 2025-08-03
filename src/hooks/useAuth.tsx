@@ -81,36 +81,56 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const signUp = async (email: string, password: string, username: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          username: username
+    try {
+      // First check if email already exists
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('email, username')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (existingProfile) {
+        return { error: { message: 'An account with this email already exists. Please sign in instead.' } };
+      }
+
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            username: username
+          }
+        }
+      });
+
+      if (error) {
+        return { error };
+      }
+
+      // If signup successful, create profile
+      if (data.user) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            user_id: data.user.id,
+            username: username,
+            email: email
+          });
+
+        if (profileError) {
+          console.error('Error creating profile:', profileError);
+          return { error: profileError };
         }
       }
-    });
 
-    // If signup successful, create profile
-    if (data.user && !error) {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          user_id: data.user.id,
-          username: username,
-          email: email
-        });
-
-      if (profileError) {
-        console.error('Error creating profile:', profileError);
-        return { error: profileError };
-      }
+      return { error: null };
+    } catch (error) {
+      console.error('Signup error:', error);
+      return { error };
     }
-
-    return { error };
   };
 
   const signIn = async (username: string, password: string) => {
