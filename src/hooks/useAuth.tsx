@@ -106,27 +106,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         }
       });
 
-      if (error) {
-        return { error };
-      }
-
-      // If signup successful, create profile
-      if (data.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            user_id: data.user.id,
-            username: username,
-            email: email
-          });
-
-        if (profileError) {
-          console.error('Error creating profile:', profileError);
-          return { error: profileError };
-        }
-      }
-
-      return { error: null };
+      // Profile will be created automatically by database trigger
+      return { error };
     } catch (error) {
       console.error('Signup error:', error);
       return { error };
