@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { Sparkles, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Sparkles, CheckCircle, XCircle, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -37,6 +37,10 @@ const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   const [usernameCheckTimeout, setUsernameCheckTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [showSignInPassword, setShowSignInPassword] = useState(false);
+  const [showSignUpPassword, setShowSignUpPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordsMatch, setPasswordsMatch] = useState<boolean | null>(null);
   
   const { user, signUp, signIn, checkUsernameAvailability } = useAuth();
   const { toast } = useToast();
@@ -58,7 +62,8 @@ const Auth = () => {
       username: '',
       password: '',
       confirmPassword: ''
-    }
+    },
+    mode: 'onChange'
   });
 
   const signInForm = useForm<SignInFormData>({
@@ -93,6 +98,30 @@ const Auth = () => {
     }, 500);
 
     setUsernameCheckTimeout(timeout);
+  };
+
+  // Watch password fields for real-time matching
+  const watchedPassword = signUpForm.watch('password');
+  const watchedConfirmPassword = signUpForm.watch('confirmPassword');
+
+  useEffect(() => {
+    if (watchedPassword && watchedConfirmPassword) {
+      setPasswordsMatch(watchedPassword === watchedConfirmPassword);
+    } else {
+      setPasswordsMatch(null);
+    }
+  }, [watchedPassword, watchedConfirmPassword]);
+
+  const getPasswordMatchIcon = () => {
+    if (passwordsMatch === null) return null;
+    return passwordsMatch ? 
+      <CheckCircle className="w-4 h-4 text-green-500" /> : 
+      <XCircle className="w-4 h-4 text-red-500" />;
+  };
+
+  const getPasswordMatchText = () => {
+    if (passwordsMatch === null) return '';
+    return passwordsMatch ? 'Passwords match' : 'Passwords do not match';
   };
 
   const onSignUp = async (data: SignUpFormData) => {
@@ -222,12 +251,28 @@ const Auth = () => {
                   
                   <div className="space-y-2">
                     <Label htmlFor="signin-password">Password</Label>
-                    <Input
-                      id="signin-password"
-                      type="password"
-                      placeholder="Enter your password"
-                      {...signInForm.register('password')}
-                    />
+                    <div className="relative">
+                      <Input
+                        id="signin-password"
+                        type={showSignInPassword ? "text" : "password"}
+                        placeholder="Enter your password"
+                        {...signInForm.register('password')}
+                        className="pr-10"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowSignInPassword(!showSignInPassword)}
+                      >
+                        {showSignInPassword ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </Button>
+                    </div>
                     {signInForm.formState.errors.password && (
                       <p className="text-sm text-destructive">{signInForm.formState.errors.password.message}</p>
                     )}
@@ -281,12 +326,28 @@ const Auth = () => {
                   
                   <div className="space-y-2">
                     <Label htmlFor="signup-password">Password</Label>
-                    <Input
-                      id="signup-password"
-                      type="password"
-                      placeholder="Choose a password"
-                      {...signUpForm.register('password')}
-                    />
+                    <div className="relative">
+                      <Input
+                        id="signup-password"
+                        type={showSignUpPassword ? "text" : "password"}
+                        placeholder="Choose a password"
+                        {...signUpForm.register('password')}
+                        className="pr-10"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowSignUpPassword(!showSignUpPassword)}
+                      >
+                        {showSignUpPassword ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </Button>
+                    </div>
                     {signUpForm.formState.errors.password && (
                       <p className="text-sm text-destructive">{signUpForm.formState.errors.password.message}</p>
                     )}
@@ -294,12 +355,36 @@ const Auth = () => {
                   
                   <div className="space-y-2">
                     <Label htmlFor="signup-confirm-password">Confirm Password</Label>
-                    <Input
-                      id="signup-confirm-password"
-                      type="password"
-                      placeholder="Confirm your password"
-                      {...signUpForm.register('confirmPassword')}
-                    />
+                    <div className="relative">
+                      <Input
+                        id="signup-confirm-password"
+                        type={showConfirmPassword ? "text" : "password"}
+                        placeholder="Confirm your password"
+                        {...signUpForm.register('confirmPassword')}
+                        className="pr-20"
+                      />
+                      <div className="absolute right-0 top-0 h-full flex items-center pr-3 space-x-1">
+                        {getPasswordMatchIcon()}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-full px-2 hover:bg-transparent"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        >
+                          {showConfirmPassword ? (
+                            <EyeOff className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <Eye className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                    {passwordsMatch !== null && (
+                      <p className={`text-sm ${passwordsMatch ? 'text-green-600' : 'text-red-600'}`}>
+                        {getPasswordMatchText()}
+                      </p>
+                    )}
                     {signUpForm.formState.errors.confirmPassword && (
                       <p className="text-sm text-destructive">{signUpForm.formState.errors.confirmPassword.message}</p>
                     )}
