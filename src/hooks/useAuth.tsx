@@ -93,13 +93,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         return { error: { message: 'An account with this email already exists. Please sign in instead.' } };
       }
 
-      const redirectUrl = `${window.location.origin}/`;
-      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: redirectUrl,
           data: {
             username: username
           }

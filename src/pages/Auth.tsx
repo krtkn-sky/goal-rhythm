@@ -43,18 +43,6 @@ const Auth = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // Check for email verification success
-  useEffect(() => {
-    const type = searchParams.get('type');
-    const tokenHash = searchParams.get('token_hash');
-    
-    if (type === 'signup' && tokenHash) {
-      toast({
-        title: "Account created successfully!",
-        description: "Your email has been verified. You can now sign in.",
-      });
-    }
-  }, [searchParams, toast]);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -120,10 +108,11 @@ const Auth = () => {
         });
       } else {
         toast({
-          title: "Check your email!",
-          description: "We've sent you a verification link to complete your registration.",
+          title: "Account created successfully!",
+          description: "You can now sign in with your username and password.",
         });
         signUpForm.reset();
+        setActiveTab('signin');
       }
     } catch (error) {
       toast({
@@ -144,7 +133,7 @@ const Auth = () => {
       if (error) {
         toast({
           title: "Sign in failed",
-          description: error.message,
+          description: "Invalid username or password. Please try again.",
           variant: "destructive"
         });
       }
@@ -324,11 +313,6 @@ const Auth = () => {
                     {isLoading ? 'Creating account...' : 'Sign Up'}
                   </Button>
                   
-                  <Alert>
-                    <AlertDescription>
-                      You'll receive a verification email after signing up. Click the link in the email to activate your account.
-                    </AlertDescription>
-                  </Alert>
                 </form>
               </TabsContent>
             </Tabs>
