@@ -262,14 +262,14 @@ const Auth = () => {
       <div className="w-full max-w-md">
         {/* Header with Theme Toggle */}
         <div className="flex justify-between items-start mb-8">
-          <div className="flex-1">
+          <div className="flex-1 text-center">
             <div className="flex items-center justify-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-gradient-success flex items-center justify-center">
                 <Sparkles className="w-5 h-5 text-success-foreground" />
               </div>
               <h1 className="text-2xl font-bold text-foreground">Goal Rhythm</h1>
             </div>
-            <p className="text-muted-foreground text-center">Track your habits and achieve your goals</p>
+            <p className="text-muted-foreground text-center max-w-md mx-auto">Track your habits and achieve your goals</p>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => navigate('/')}>

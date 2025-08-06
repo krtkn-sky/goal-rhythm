@@ -248,14 +248,27 @@ const HabitCalendar = ({
   const getDayCompletionStatus = (dateString: string) => {
     if (selectedHabits.length === 0) return 'none';
     
-    const completedHabits = selectedHabits.filter(habit => 
+    const date = new Date(dateString);
+    const dayOfWeek = date.getDay();
+    
+    // Get habits that should be tracked for this specific day
+    const habitsForThisDay = selectedHabits.filter(habit => {
+      if (habit.frequency === 'weekly' && habit.weeklyDays) {
+        return habit.weeklyDays.includes(dayOfWeek);
+      }
+      return habit.frequency === 'daily';
+    });
+    
+    if (habitsForThisDay.length === 0) return 'none';
+    
+    const completedHabits = habitsForThisDay.filter(habit => 
       getHabitStatusForDate(habit.id, dateString) === true
     ).length;
     
-    if (completedHabits === selectedHabits.length) return 'complete';
+    if (completedHabits === habitsForThisDay.length) return 'complete';
     if (completedHabits > 0) return 'partial';
     
-    const hasAnyData = selectedHabits.some(habit => 
+    const hasAnyData = habitsForThisDay.some(habit => 
       getHabitStatusForDate(habit.id, dateString) !== undefined
     );
     

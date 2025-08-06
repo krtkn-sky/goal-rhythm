@@ -97,6 +97,51 @@ const Dashboard = ({
     description: 'Complete any habit for 30 days',
     icon: '🎖️',
     unlocked: currentStreaks.some(s => s.current >= 30)
+  }, {
+    name: 'Perfect Day',
+    description: 'Complete all habits in a single day',
+    icon: '⭐',
+    unlocked: (() => {
+      const today = new Date().toISOString().split('T')[0];
+      const completedToday = habits.filter(habit => streakData.some(d => d.habitId === habit.id && d.date === today && d.completed)).length;
+      return habits.length > 0 && completedToday === habits.length;
+    })()
+  }, {
+    name: 'Triple Threat',
+    description: 'Track 3 different habits',
+    icon: '🔥',
+    unlocked: habits.length >= 3
+  }, {
+    name: 'Century Club',
+    description: 'Complete any habit for 100 days',
+    icon: '💯',
+    unlocked: currentStreaks.some(s => s.current >= 100)
+  }, {
+    name: 'Habit Hero',
+    description: 'Track 5 different habits',
+    icon: '🦸',
+    unlocked: habits.length >= 5
+  }, {
+    name: 'Perfect Week',
+    description: 'Complete all habits every day for a week',
+    icon: '🌟',
+    unlocked: (() => {
+      if (habits.length === 0) return false;
+      const today = new Date();
+      for (let i = 0; i < 7; i++) {
+        const checkDate = new Date(today);
+        checkDate.setDate(today.getDate() - i);
+        const dateString = checkDate.toISOString().split('T')[0];
+        const completedOnDay = habits.filter(habit => streakData.some(d => d.habitId === habit.id && d.date === dateString && d.completed)).length;
+        if (completedOnDay !== habits.length) return false;
+      }
+      return true;
+    })()
+  }, {
+    name: 'Streak Legend',
+    description: 'Maintain any habit for 365 days',
+    icon: '👑',
+    unlocked: currentStreaks.some(s => s.current >= 365)
   }];
 
   // Calculate this week's progress
@@ -111,11 +156,24 @@ const Dashboard = ({
       const date = new Date(startOfWeek);
       date.setDate(startOfWeek.getDate() + i);
       const dateString = date.toISOString().split('T')[0];
-      const completed = habits.filter(habit => streakData.some(d => d.habitId === habit.id && d.date === dateString && d.completed)).length;
+      const dayOfWeek = date.getDay();
+      
+      // Filter habits that should be active on this day
+      const activeHabitsForDay = habits.filter(habit => {
+        if (habit.frequency === 'weekly' && habit.weeklyDays) {
+          return habit.weeklyDays.includes(dayOfWeek);
+        }
+        return habit.frequency === 'daily';
+      });
+      
+      const completed = activeHabitsForDay.filter(habit => 
+        streakData.some(d => d.habitId === habit.id && d.date === dateString && d.completed)
+      ).length;
+      
       return {
         day: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][i],
         completed,
-        total: habits.length
+        total: activeHabitsForDay.length
       };
     });
   };
@@ -131,8 +189,19 @@ const Dashboard = ({
 
   // Calculate today's progress
   const today = new Date().toISOString().split('T')[0];
-  const totalHabitsToday = habits.length;
-  const completedToday = habits.filter(habit => streakData.some(d => d.habitId === habit.id && d.date === today && d.completed)).length;
+  const todayDate = new Date();
+  const todayDayOfWeek = todayDate.getDay();
+  
+  // Filter habits that should be active today
+  const activeHabitsToday = habits.filter(habit => {
+    if (habit.frequency === 'weekly' && habit.weeklyDays) {
+      return habit.weeklyDays.includes(todayDayOfWeek);
+    }
+    return habit.frequency === 'daily';
+  });
+  
+  const totalHabitsToday = activeHabitsToday.length;
+  const completedToday = activeHabitsToday.filter(habit => streakData.some(d => d.habitId === habit.id && d.date === today && d.completed)).length;
   const todayProgress = totalHabitsToday > 0 ? completedToday / totalHabitsToday * 100 : 0;
   
   const formatDateString = (dateString: string) => {
