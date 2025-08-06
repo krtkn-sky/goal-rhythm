@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { Sparkles, CheckCircle, XCircle, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Sparkles, CheckCircle, XCircle, Loader2, Eye, EyeOff, Home } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -217,7 +217,13 @@ const Auth = () => {
             </div>
             <p className="text-muted-foreground text-center">Track your habits and achieve your goals</p>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
+              <Home className="w-4 h-4 mr-2" />
+              Home
+            </Button>
+            <ThemeToggle />
+          </div>
         </div>
 
         <Card>

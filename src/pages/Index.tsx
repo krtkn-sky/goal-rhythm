@@ -40,7 +40,6 @@ interface DeletedHabit {
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('calendar');
-  const [isDarkMode, setIsDarkMode] = useState(false);
   
   const { user, userProfile, signOut, loading } = useAuth();
   const { 
@@ -58,12 +57,6 @@ const Index = () => {
   } = useHabits();
   const navigate = useNavigate();
 
-  // Initialize dark mode from localStorage
-  useEffect(() => {
-    const savedDarkMode = localStorage.getItem('darkMode') === 'true';
-    setIsDarkMode(savedDarkMode);
-    document.documentElement.classList.toggle('dark', savedDarkMode);
-  }, []);
 
   const restoreHabit = (deletedHabit: DeletedHabit) => {
     restoreHabitDB(deletedHabit);
@@ -77,12 +70,6 @@ const Index = () => {
     setDeletedHabits([]);
   };
 
-  const toggleDarkMode = () => {
-    const newDarkMode = !isDarkMode;
-    setIsDarkMode(newDarkMode);
-    localStorage.setItem('darkMode', newDarkMode.toString());
-    document.documentElement.classList.toggle('dark', newDarkMode);
-  };
 
   const handleAuthAction = () => {
     if (user) {
