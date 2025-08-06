@@ -36,13 +36,15 @@ const Auth = () => {
   const [activeTab, setActiveTab] = useState('signin');
   const [isLoading, setIsLoading] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
   const [usernameCheckTimeout, setUsernameCheckTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [emailCheckTimeout, setEmailCheckTimeout] = useState<NodeJS.Timeout | null>(null);
   const [showSignInPassword, setShowSignInPassword] = useState(false);
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordsMatch, setPasswordsMatch] = useState<boolean | null>(null);
   
-  const { user, signUp, signIn, checkUsernameAvailability } = useAuth();
+  const { user, signUp, signIn, checkUsernameAvailability, checkEmailAvailability } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -100,6 +102,32 @@ const Auth = () => {
     setUsernameCheckTimeout(timeout);
   };
 
+  const handleEmailChange = (email: string) => {
+    signUpForm.setValue('email', email);
+    
+    if (emailCheckTimeout) {
+      clearTimeout(emailCheckTimeout);
+    }
+
+    if (!email.includes('@')) {
+      setEmailStatus('idle');
+      return;
+    }
+
+    setEmailStatus('checking');
+    
+    const timeout = setTimeout(async () => {
+      try {
+        const isAvailable = await checkEmailAvailability(email);
+        setEmailStatus(isAvailable ? 'available' : 'taken');
+      } catch (error) {
+        setEmailStatus('idle');
+      }
+    }, 500);
+
+    setEmailCheckTimeout(timeout);
+  };
+
   // Watch password fields for real-time matching
   const watchedPassword = signUpForm.watch('password');
   const watchedConfirmPassword = signUpForm.watch('confirmPassword');
@@ -138,7 +166,7 @@ const Auth = () => {
       } else {
         toast({
           title: "Account created successfully!",
-          description: "You can now sign in with your username and password.",
+          description: "Please check your email to confirm your account before signing in.",
         });
         signUpForm.reset();
         setActiveTab('signin');
@@ -203,6 +231,32 @@ const Auth = () => {
     }
   };
 
+  const getEmailStatusIcon = () => {
+    switch (emailStatus) {
+      case 'checking':
+        return <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />;
+      case 'available':
+        return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'taken':
+        return <XCircle className="w-4 h-4 text-red-500" />;
+      default:
+        return null;
+    }
+  };
+
+  const getEmailStatusText = () => {
+    switch (emailStatus) {
+      case 'checking':
+        return 'Checking availability...';
+      case 'available':
+        return 'Email is available';
+      case 'taken':
+        return 'Email is already registered';
+      default:
+        return '';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-subtle flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -219,8 +273,7 @@ const Auth = () => {
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
-              <Home className="w-4 h-4 mr-2" />
-              Home
+              <Home className="w-4 h-4" />
             </Button>
             <ThemeToggle />
           </div>
@@ -294,12 +347,24 @@ const Auth = () => {
                 <form onSubmit={signUpForm.handleSubmit(onSignUp)} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="signup-email">Email</Label>
-                    <Input
-                      id="signup-email"
-                      type="email"
-                      placeholder="Enter your email"
-                      {...signUpForm.register('email')}
-                    />
+                    <div className="relative">
+                      <Input
+                        id="signup-email"
+                        type="email"
+                        placeholder="Enter your email"
+                        {...signUpForm.register('email')}
+                        onChange={(e) => handleEmailChange(e.target.value)}
+                        className="pr-10"
+                      />
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        {getEmailStatusIcon()}
+                      </div>
+                    </div>
+                    {emailStatus !== 'idle' && (
+                      <p className={`text-sm ${emailStatus === 'available' ? 'text-green-600' : emailStatus === 'taken' ? 'text-red-600' : 'text-muted-foreground'}`}>
+                        {getEmailStatusText()}
+                      </p>
+                    )}
                     {signUpForm.formState.errors.email && (
                       <p className="text-sm text-destructive">{signUpForm.formState.errors.email.message}</p>
                     )}
@@ -399,7 +464,7 @@ const Auth = () => {
                   <Button 
                     type="submit" 
                     className="w-full" 
-                    disabled={isLoading || usernameStatus === 'taken'}
+                    disabled={isLoading || usernameStatus === 'taken' || emailStatus === 'taken'}
                   >
                     {isLoading ? 'Creating account...' : 'Sign Up'}
                   </Button>

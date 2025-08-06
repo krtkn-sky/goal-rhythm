@@ -11,6 +11,7 @@ interface AuthContextType {
   signIn: (username: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   checkUsernameAvailability: (username: string) => Promise<boolean>;
+  checkEmailAvailability: (email: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -82,28 +83,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const signUp = async (email: string, password: string, username: string) => {
     try {
-      // First check if email already exists
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('email, username')
-        .eq('email', email)
-        .maybeSingle();
-
-      if (existingProfile) {
-        return { error: { message: 'An account with this email already exists. Please sign in instead.' } };
-      }
-
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          emailRedirectTo: `${window.location.origin}/`,
           data: {
             username: username
           }
         }
       });
 
-      // Profile will be created automatically by database trigger
       return { error };
     } catch (error) {
       console.error('Signup error:', error);
@@ -156,6 +146,26 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  const checkEmailAvailability = async (email: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('email', email)
+        .maybeSingle();
+      
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error checking email:', error);
+        return false;
+      }
+      
+      return !data; // Available if no data found
+    } catch (error) {
+      console.error('Error checking email:', error);
+      return false;
+    }
+  };
+
   const value = {
     user,
     session,
@@ -164,7 +174,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     signUp,
     signIn,
     signOut,
-    checkUsernameAvailability
+    checkUsernameAvailability,
+    checkEmailAvailability
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
