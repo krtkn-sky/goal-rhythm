@@ -154,7 +154,7 @@ const Index = () => {
               onDeletedHabitsChange={setDeletedHabits}
               onAddHabit={user ? addHabit : undefined}
               onDeleteHabit={user ? deleteHabitDB : undefined}
-              onToggleCompletion={user ? toggleHabitCompletion : undefined}
+              onToggleCompletion={user ? (habitId, date, completed) => toggleHabitCompletion(habitId, date, completed) : undefined}
             />
           </TabsContent>
 

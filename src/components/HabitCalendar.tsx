@@ -42,7 +42,7 @@ interface HabitCalendarProps {
   onDeletedHabitsChange?: (deleted: DeletedHabit[]) => void;
   onAddHabit?: (habit: Omit<Habit, 'id'>) => void;
   onDeleteHabit?: (habitId: string) => void;
-  onToggleCompletion?: (habitId: string, date: string) => void;
+  onToggleCompletion?: (habitId: string, date: string, completed?: boolean) => void;
 }
 
 const HabitCalendar = ({ 
@@ -236,7 +236,7 @@ const HabitCalendar = ({
     }
 
     if (onToggleCompletion) {
-      onToggleCompletion(habitId, date);
+      onToggleCompletion(habitId, date, completed);
     } else {
       // Fallback to old method if no onToggleCompletion provided
       const updatedStreakData = streakData.filter(d => !(d.habitId === habitId && d.date === date));
@@ -270,35 +270,17 @@ const HabitCalendar = ({
     const completedHabits = habitStatuses.filter(h => h.status === true).length;
     const missedHabits = habitStatuses.filter(h => h.status === false).length;
     
-    // Debug logging for today
-    const isToday = dateString === new Date().toISOString().split('T')[0];
-    if (isToday) {
-      console.log('Today\'s status check:', {
-        dateString,
-        dayOfWeek,
-        habitsForThisDay: habitsForThisDay.length,
-        habitStatuses,
-        completedHabits,
-        missedHabits,
-        totalHabits: habitsForThisDay.length
-      });
-    }
-    
     // All habits are completed
     if (completedHabits === habitsForThisDay.length) {
-      if (isToday) console.log('Returning COMPLETE - all habits done!');
       return 'complete';
     }
     
     // Some habits are completed or missed (user has interacted with this day)
     if (completedHabits > 0 || missedHabits > 0) {
-      const result = completedHabits > 0 ? 'partial' : 'missed';
-      if (isToday) console.log('Returning:', result);
-      return result;
+      return completedHabits > 0 ? 'partial' : 'missed';
     }
     
     // No interaction yet
-    if (isToday) console.log('Returning NONE - no interaction');
     return 'none';
   };
 

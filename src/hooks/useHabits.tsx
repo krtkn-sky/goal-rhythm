@@ -99,7 +99,7 @@ export const useHabits = () => {
       const transformedStreaks: StreakData[] = completionsData?.map(c => ({
         habitId: c.habit_id,
         date: c.completed_date,
-        completed: c.completed ?? true // Handle legacy data that might not have completed field
+        completed: (c as any).completed ?? true // Handle legacy data that might not have completed field
       })) || [];
 
       const transformedDeleted: DeletedHabit[] = deletedHabitsData?.map(h => ({
