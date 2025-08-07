@@ -265,14 +265,20 @@ const HabitCalendar = ({
       getHabitStatusForDate(habit.id, dateString) === true
     ).length;
     
+    const missedHabits = habitsForThisDay.filter(habit => 
+      getHabitStatusForDate(habit.id, dateString) === false
+    ).length;
+    
+    // All habits are completed
     if (completedHabits === habitsForThisDay.length) return 'complete';
-    if (completedHabits > 0) return 'partial';
     
-    const hasAnyData = habitsForThisDay.some(habit => 
-      getHabitStatusForDate(habit.id, dateString) !== undefined
-    );
+    // Some habits are completed or missed (user has interacted with this day)
+    if (completedHabits > 0 || missedHabits > 0) {
+      return completedHabits > 0 ? 'partial' : 'missed';
+    }
     
-    return hasAnyData ? 'missed' : 'none';
+    // No interaction yet
+    return 'none';
   };
 
   const renderDayIndicator = (status: string) => {

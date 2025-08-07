@@ -53,26 +53,73 @@ const Dashboard = ({
   // Calculate current streaks for each habit
   const calculateCurrentStreak = (habitId: string) => {
     const today = new Date();
+    const habit = habits.find(h => h.id === habitId);
+    if (!habit) return 0;
+    
     let streak = 0;
     for (let i = 0; i < 365; i++) {
-      // Check last 365 days
       const checkDate = new Date(today);
       checkDate.setDate(checkDate.getDate() - i);
       const dateString = checkDate.toISOString().split('T')[0];
+      const dayOfWeek = checkDate.getDay();
+      
+      // Check if this habit should be tracked on this day
+      const shouldTrackToday = habit.frequency === 'daily' || 
+        (habit.frequency === 'weekly' && habit.weeklyDays?.includes(dayOfWeek));
+      
+      if (!shouldTrackToday) {
+        continue; // Skip days when habit shouldn't be tracked
+      }
+      
       const entry = streakData.find(d => d.habitId === habitId && d.date === dateString);
       if (entry?.completed) {
         streak++;
-      } else {
+      } else if (entry?.completed === false) {
+        // Explicitly marked as missed
         break;
+      } else {
+        // No entry for this date - break streak only if it's a past date
+        const isToday = checkDate.toDateString() === today.toDateString();
+        if (!isToday) {
+          break;
+        }
       }
     }
     return streak;
   };
   
+  // Calculate longest streak for each habit  
+  const calculateLongestStreak = (habitId: string) => {
+    const habitEntries = streakData
+      .filter(d => d.habitId === habitId && d.completed)
+      .map(d => new Date(d.date))
+      .sort((a, b) => a.getTime() - b.getTime());
+
+    if (habitEntries.length === 0) return 0;
+
+    let longestStreak = 1;
+    let currentStreak = 1;
+
+    for (let i = 1; i < habitEntries.length; i++) {
+      const prevDate = habitEntries[i - 1];
+      const currentDate = habitEntries[i];
+      const daysDiff = Math.floor((currentDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24));
+
+      if (daysDiff === 1) {
+        currentStreak++;
+        longestStreak = Math.max(longestStreak, currentStreak);
+      } else {
+        currentStreak = 1;
+      }
+    }
+
+    return longestStreak;
+  };
+
   const currentStreaks = habits.map(habit => ({
     name: habit.name,
     current: calculateCurrentStreak(habit.id),
-    best: Math.max(calculateCurrentStreak(habit.id), 0),
+    best: calculateLongestStreak(habit.id),
     icon: habit.icon,
     color: 'bg-primary'
   }));
