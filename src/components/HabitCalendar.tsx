@@ -261,26 +261,47 @@ const HabitCalendar = ({
     
     if (habitsForThisDay.length === 0) return 'none';
     
-    const habitStatuses = habitsForThisDay.map(habit => ({
-      id: habit.id,
-      name: habit.name,
-      status: getHabitStatusForDate(habit.id, dateString)
-    }));
+    // Check completion status for each habit on this day
+    const habitStatuses = habitsForThisDay.map(habit => {
+      const status = getHabitStatusForDate(habit.id, dateString);
+      return {
+        id: habit.id,
+        name: habit.name,
+        frequency: habit.frequency,
+        weeklyDays: habit.weeklyDays,
+        status: status
+      };
+    });
     
     const completedHabits = habitStatuses.filter(h => h.status === true).length;
     const missedHabits = habitStatuses.filter(h => h.status === false).length;
     
+    // Debug info for specific dates
+    const debugDate = dateString === '2025-08-02' || dateString === '2025-08-03' || dateString === '2025-08-04';
+    if (debugDate) {
+      console.log(`Day ${dateString} (day ${dayOfWeek}):`, {
+        habitsForThisDay: habitsForThisDay.map(h => ({name: h.name, freq: h.frequency, days: h.weeklyDays})),
+        habitStatuses,
+        completedHabits,
+        totalExpected: habitsForThisDay.length
+      });
+    }
+    
     // All habits are completed
     if (completedHabits === habitsForThisDay.length) {
+      if (debugDate) console.log(`✅ ALL COMPLETE for ${dateString}`);
       return 'complete';
     }
     
     // Some habits are completed or missed (user has interacted with this day)
     if (completedHabits > 0 || missedHabits > 0) {
-      return completedHabits > 0 ? 'partial' : 'missed';
+      const result = completedHabits > 0 ? 'partial' : 'missed';
+      if (debugDate) console.log(`⚠️ PARTIAL/MISSED for ${dateString}: ${result}`);
+      return result;
     }
     
     // No interaction yet
+    if (debugDate) console.log(`🔹 NO DATA for ${dateString}`);
     return 'none';
   };
 
