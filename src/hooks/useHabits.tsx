@@ -99,7 +99,7 @@ export const useHabits = () => {
       const transformedStreaks: StreakData[] = completionsData?.map(c => ({
         habitId: c.habit_id,
         date: c.completed_date,
-        completed: true
+        completed: c.completed ?? true // Handle legacy data that might not have completed field
       })) || [];
 
       const transformedDeleted: DeletedHabit[] = deletedHabitsData?.map(h => ({
@@ -233,37 +233,51 @@ export const useHabits = () => {
     }
   };
 
-  const toggleHabitCompletion = async (habitId: string, date: string) => {
+  const toggleHabitCompletion = async (habitId: string, date: string, forceCompleted?: boolean) => {
     if (!user) return;
 
     try {
-      const isCompleted = streakData.some(s => s.habitId === habitId && s.date === date);
+      const existingEntry = streakData.find(s => s.habitId === habitId && s.date === date);
+      
+      // If forceCompleted is specified, use that value, otherwise toggle
+      let newCompletedState: boolean;
+      if (forceCompleted !== undefined) {
+        newCompletedState = forceCompleted;
+      } else {
+        // Toggle: if exists and completed, remove; if doesn't exist, add as completed
+        newCompletedState = !existingEntry?.completed;
+      }
 
-      if (isCompleted) {
-        // Remove completion
-        const { error } = await supabase
+      // Always delete existing entry first
+      if (existingEntry) {
+        const { error: deleteError } = await supabase
           .from('habit_completions')
           .delete()
           .eq('habit_id', habitId)
           .eq('completed_date', date)
           .eq('user_id', user.id);
 
-        if (error) throw error;
+        if (deleteError) throw deleteError;
+      }
 
-        setStreakData(prev => prev.filter(s => !(s.habitId === habitId && s.date === date)));
-      } else {
-        // Add completion
-        const { error } = await supabase
+      // Update local state by removing existing entry
+      setStreakData(prev => prev.filter(s => !(s.habitId === habitId && s.date === date)));
+
+      // Add new entry if needed (both for completed=true and completed=false)
+      if (existingEntry || newCompletedState) {
+        const { error: insertError } = await supabase
           .from('habit_completions')
           .insert({
             user_id: user.id,
             habit_id: habitId,
-            completed_date: date
+            completed_date: date,
+            completed: newCompletedState
           });
 
-        if (error) throw error;
+        if (insertError) throw insertError;
 
-        setStreakData(prev => [...prev, { habitId, date, completed: true }]);
+        // Update local state with new entry
+        setStreakData(prev => [...prev, { habitId, date, completed: newCompletedState }]);
       }
     } catch (error) {
       console.error('Error toggling habit completion:', error);

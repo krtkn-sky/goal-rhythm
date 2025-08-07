@@ -261,23 +261,44 @@ const HabitCalendar = ({
     
     if (habitsForThisDay.length === 0) return 'none';
     
-    const completedHabits = habitsForThisDay.filter(habit => 
-      getHabitStatusForDate(habit.id, dateString) === true
-    ).length;
+    const habitStatuses = habitsForThisDay.map(habit => ({
+      id: habit.id,
+      name: habit.name,
+      status: getHabitStatusForDate(habit.id, dateString)
+    }));
     
-    const missedHabits = habitsForThisDay.filter(habit => 
-      getHabitStatusForDate(habit.id, dateString) === false
-    ).length;
+    const completedHabits = habitStatuses.filter(h => h.status === true).length;
+    const missedHabits = habitStatuses.filter(h => h.status === false).length;
+    
+    // Debug logging for today
+    const isToday = dateString === new Date().toISOString().split('T')[0];
+    if (isToday) {
+      console.log('Today\'s status check:', {
+        dateString,
+        dayOfWeek,
+        habitsForThisDay: habitsForThisDay.length,
+        habitStatuses,
+        completedHabits,
+        missedHabits,
+        totalHabits: habitsForThisDay.length
+      });
+    }
     
     // All habits are completed
-    if (completedHabits === habitsForThisDay.length) return 'complete';
+    if (completedHabits === habitsForThisDay.length) {
+      if (isToday) console.log('Returning COMPLETE - all habits done!');
+      return 'complete';
+    }
     
     // Some habits are completed or missed (user has interacted with this day)
     if (completedHabits > 0 || missedHabits > 0) {
-      return completedHabits > 0 ? 'partial' : 'missed';
+      const result = completedHabits > 0 ? 'partial' : 'missed';
+      if (isToday) console.log('Returning:', result);
+      return result;
     }
     
     // No interaction yet
+    if (isToday) console.log('Returning NONE - no interaction');
     return 'none';
   };
 
@@ -444,7 +465,13 @@ const HabitCalendar = ({
                           <Button
                             size="sm"
                             variant={status === true ? "default" : "outline"}
-                            onClick={() => toggleHabitStatus(habit.id, dateString, true)}
+                            onClick={() => {
+                              if (onToggleCompletion) {
+                                onToggleCompletion(habit.id, dateString, true);
+                              } else {
+                                toggleHabitStatus(habit.id, dateString, true);
+                              }
+                            }}
                             className="flex-1 h-7 text-xs"
                           >
                             <Check className="w-3 h-3 mr-1" />
@@ -453,7 +480,13 @@ const HabitCalendar = ({
                           <Button
                             size="sm"
                             variant={status === false ? "destructive" : "outline"}
-                            onClick={() => toggleHabitStatus(habit.id, dateString, false)}
+                            onClick={() => {
+                              if (onToggleCompletion) {
+                                onToggleCompletion(habit.id, dateString, false);
+                              } else {
+                                toggleHabitStatus(habit.id, dateString, false);
+                              }
+                            }}
                             className="flex-1 h-7 text-xs"
                           >
                             <Minus className="w-3 h-3 mr-1" />
