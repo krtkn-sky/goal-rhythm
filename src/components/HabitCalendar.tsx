@@ -312,7 +312,7 @@ const HabitCalendar = ({
       case 'complete':
         return (
           <div className={`${baseStyle} text-green-600`}>
-            <svg viewBox="0 0 24 24" className="w-8 h-8" fill="currentColor">
+            <svg viewBox="0 0 24 24" className="w-6 h-6 sm:w-8 sm:h-8" fill="currentColor">
               <path d="M4 12l4 4 12-12" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
@@ -320,7 +320,7 @@ const HabitCalendar = ({
       case 'partial':
         return (
           <div className={`${baseStyle} text-yellow-500`}>
-            <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
+            <svg viewBox="0 0 24 24" className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor">
               <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="3" fill="none"/>
             </svg>
           </div>
@@ -328,7 +328,7 @@ const HabitCalendar = ({
       case 'missed':
         return (
           <div className={`${baseStyle} text-red-500`}>
-            <svg viewBox="0 0 24 24" className="w-8 h-8" fill="currentColor">
+            <svg viewBox="0 0 24 24" className="w-6 h-6 sm:w-8 sm:h-8" fill="currentColor">
               <path d="M6 6l12 12M18 6l-12 12" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round"/>
             </svg>
           </div>
@@ -395,7 +395,7 @@ const HabitCalendar = ({
 
     // Empty cells for previous month
     for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="h-20 border border-border/30"></div>);
+      days.push(<div key={`empty-${i}`} className="h-16 sm:h-20 border border-border/30"></div>);
     }
 
     // Calendar days
@@ -413,7 +413,7 @@ const HabitCalendar = ({
       days.push(
         <div
           key={day}
-          className={`h-20 border border-border/30 p-1 transition-colors relative ${
+          className={`h-16 sm:h-20 border border-border/30 p-1 transition-colors relative ${
             isFuture 
               ? 'bg-muted/50 opacity-50 cursor-not-allowed' 
               : 'hover:bg-muted/50 cursor-pointer'
@@ -500,8 +500,12 @@ const HabitCalendar = ({
                               size="sm"
                               variant="ghost"
                               onClick={() => {
-                                const updatedData = streakData.filter(d => !(d.habitId === habit.id && d.date === dateString));
-                                onStreakDataChange?.(updatedData);
+                                if (onToggleCompletion) {
+                                  onToggleCompletion(habit.id, dateString, undefined);
+                                } else {
+                                  const updatedData = streakData.filter(d => !(d.habitId === habit.id && d.date === dateString));
+                                  onStreakDataChange?.(updatedData);
+                                }
                               }}
                               className="h-7 w-7 p-0"
                             >
@@ -532,7 +536,7 @@ const HabitCalendar = ({
   // Always show calendar - if no habits, show the same calendar but with Add Habit button
 
   return (
-    <div className="w-full max-w-6xl mx-auto p-6 space-y-6">
+    <div className="w-full max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

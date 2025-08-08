@@ -148,11 +148,14 @@ const Dashboard = ({
     name: 'Perfect Day',
     description: 'Complete all habits in a single day',
     icon: '⭐',
-    unlocked: (() => {
-      const today = new Date().toISOString().split('T')[0];
-      const completedToday = habits.filter(habit => streakData.some(d => d.habitId === habit.id && d.date === today && d.completed)).length;
-      return habits.length > 0 && completedToday === habits.length;
-    })()
+      unlocked: (() => {
+        const todayDate = new Date();
+        const today = todayDate.toISOString().split('T')[0];
+        const dayOfWeek = todayDate.getDay();
+        const activeHabits = habits.filter(habit => habit.frequency === 'daily' || (habit.frequency === 'weekly' && habit.weeklyDays?.includes(dayOfWeek)));
+        const completedToday = activeHabits.filter(habit => streakData.some(d => d.habitId === habit.id && d.date === today && d.completed)).length;
+        return activeHabits.length > 0 && completedToday === activeHabits.length;
+      })()
   }, {
     name: 'Triple Threat',
     description: 'Track 3 different habits',
