@@ -240,7 +240,9 @@ const HabitCalendar = ({
     } else {
       // Fallback to old method if no onToggleCompletion provided
       const updatedStreakData = streakData.filter(d => !(d.habitId === habitId && d.date === date));
-      updatedStreakData.push({ habitId, date, completed });
+      if (completed !== undefined) {
+        updatedStreakData.push({ habitId, date, completed });
+      }
       onStreakDataChange?.(updatedStreakData);
     }
   };
@@ -262,46 +264,56 @@ const HabitCalendar = ({
     if (habitsForThisDay.length === 0) return 'none';
     
     // Check completion status for each habit on this day
-    const habitStatuses = habitsForThisDay.map(habit => {
+    const completedCount = habitsForThisDay.filter(habit => {
       const status = getHabitStatusForDate(habit.id, dateString);
-      return {
-        id: habit.id,
-        name: habit.name,
-        frequency: habit.frequency,
-        weeklyDays: habit.weeklyDays,
-        status: status
-      };
-    });
+      return status === true; // Only count explicitly completed habits
+    }).length;
     
-    const completedHabits = habitStatuses.filter(h => h.status === true).length;
-    const missedHabits = habitStatuses.filter(h => h.status === false).length;
+    const missedCount = habitsForThisDay.filter(habit => {
+      const status = getHabitStatusForDate(habit.id, dateString);
+      return status === false; // Only count explicitly missed habits
+    }).length;
     
-    // Debug info for specific dates
+    // Debug logging for problematic dates
     const debugDate = dateString === '2025-08-02' || dateString === '2025-08-03' || dateString === '2025-08-04';
     if (debugDate) {
-      console.log(`Day ${dateString} (day ${dayOfWeek}):`, {
-        habitsForThisDay: habitsForThisDay.map(h => ({name: h.name, freq: h.frequency, days: h.weeklyDays})),
-        habitStatuses,
-        completedHabits,
-        totalExpected: habitsForThisDay.length
-      });
+      console.log(`=== DEBUG: Day ${dateString} (${dayOfWeek}) ===`);
+      console.log('Habits for this day:', habitsForThisDay.map(h => ({
+        id: h.id, 
+        name: h.name, 
+        frequency: h.frequency, 
+        weeklyDays: h.weeklyDays
+      })));
+      
+      const statusDetails = habitsForThisDay.map(habit => ({
+        id: habit.id,
+        name: habit.name,
+        status: getHabitStatusForDate(habit.id, dateString)
+      }));
+      console.log('Status details:', statusDetails);
+      console.log(`Completed: ${completedCount}/${habitsForThisDay.length}, Missed: ${missedCount}`);
     }
     
-    // All habits are completed
-    if (completedHabits === habitsForThisDay.length) {
-      if (debugDate) console.log(`✅ ALL COMPLETE for ${dateString}`);
+    // All habits are explicitly completed
+    if (completedCount === habitsForThisDay.length) {
+      if (debugDate) console.log(`✅ RESULT: complete`);
       return 'complete';
     }
     
-    // Some habits are completed or missed (user has interacted with this day)
-    if (completedHabits > 0 || missedHabits > 0) {
-      const result = completedHabits > 0 ? 'partial' : 'missed';
-      if (debugDate) console.log(`⚠️ PARTIAL/MISSED for ${dateString}: ${result}`);
-      return result;
+    // Some habits completed, some missed or untouched
+    if (completedCount > 0) {
+      if (debugDate) console.log(`⚠️ RESULT: partial`);
+      return 'partial';
+    }
+    
+    // Some habits explicitly missed, none completed
+    if (missedCount > 0) {
+      if (debugDate) console.log(`❌ RESULT: missed`);
+      return 'missed';
     }
     
     // No interaction yet
-    if (debugDate) console.log(`🔹 NO DATA for ${dateString}`);
+    if (debugDate) console.log(`🔹 RESULT: none`);
     return 'none';
   };
 
@@ -395,7 +407,7 @@ const HabitCalendar = ({
 
     // Empty cells for previous month
     for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="h-16 sm:h-20 border border-border/30"></div>);
+      days.push(<div key={`empty-${i}`} className="h-12 sm:h-16 md:h-20 border border-border/30"></div>);
     }
 
     // Calendar days
@@ -413,7 +425,7 @@ const HabitCalendar = ({
       days.push(
         <div
           key={day}
-          className={`h-16 sm:h-20 border border-border/30 p-1 transition-colors relative ${
+          className={`h-12 sm:h-16 md:h-20 border border-border/30 p-1 transition-colors relative ${
             isFuture 
               ? 'bg-muted/50 opacity-50 cursor-not-allowed' 
               : 'hover:bg-muted/50 cursor-pointer'
@@ -421,7 +433,7 @@ const HabitCalendar = ({
             isToday ? 'bg-primary/20 border-primary border-2' : 'bg-card'
           }`}
         >
-          <div className={`text-sm font-medium mb-1 ${
+          <div className={`text-xs sm:text-sm font-medium mb-1 ${
             isFuture ? 'text-muted-foreground' : isToday ? 'text-primary font-bold' : 'text-foreground'
           }`}>
             {day}
@@ -447,9 +459,9 @@ const HabitCalendar = ({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="absolute top-1 right-1 w-6 h-6 p-0 opacity-60 hover:opacity-100"
+                    className="absolute top-1 right-1 w-4 h-4 sm:w-6 sm:h-6 p-0 opacity-60 hover:opacity-100"
                   >
-                    <List className="w-3 h-3" />
+                    <List className="w-2 h-2 sm:w-3 sm:h-3" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-64 bg-popover border border-border shadow-lg z-50">
@@ -468,13 +480,7 @@ const HabitCalendar = ({
                           <Button
                             size="sm"
                             variant={status === true ? "default" : "outline"}
-                            onClick={() => {
-                              if (onToggleCompletion) {
-                                onToggleCompletion(habit.id, dateString, true);
-                              } else {
-                                toggleHabitStatus(habit.id, dateString, true);
-                              }
-                            }}
+                            onClick={() => toggleHabitStatus(habit.id, dateString, true)}
                             className="flex-1 h-7 text-xs"
                           >
                             <Check className="w-3 h-3 mr-1" />
@@ -483,13 +489,7 @@ const HabitCalendar = ({
                           <Button
                             size="sm"
                             variant={status === false ? "destructive" : "outline"}
-                            onClick={() => {
-                              if (onToggleCompletion) {
-                                onToggleCompletion(habit.id, dateString, false);
-                              } else {
-                                toggleHabitStatus(habit.id, dateString, false);
-                              }
-                            }}
+                            onClick={() => toggleHabitStatus(habit.id, dateString, false)}
                             className="flex-1 h-7 text-xs"
                           >
                             <Minus className="w-3 h-3 mr-1" />
@@ -499,14 +499,7 @@ const HabitCalendar = ({
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={() => {
-                                if (onToggleCompletion) {
-                                  onToggleCompletion(habit.id, dateString, undefined);
-                                } else {
-                                  const updatedData = streakData.filter(d => !(d.habitId === habit.id && d.date === dateString));
-                                  onStreakDataChange?.(updatedData);
-                                }
-                              }}
+                              onClick={() => toggleHabitStatus(habit.id, dateString, undefined)}
                               className="h-7 w-7 p-0"
                             >
                               <X className="w-3 h-3" />
