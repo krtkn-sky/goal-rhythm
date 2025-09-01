@@ -46,23 +46,17 @@ const Dashboard = ({ habits = [], streakData = [] }: DashboardProps) => {
 
   const todayProgress = habitsForToday.length > 0 ? (completedToday / habitsForToday.length) * 100 : 0;
 
-  // Calculate current streaks for each habit
+  // Calculate current streaks for each habit using the same logic as calendar
   const calculateCurrentStreak = (habitId: string) => {
     const habit = habits.find(h => h.id === habitId);
     if (!habit) return 0;
 
-    const habitEntries = streakData
-      .filter(d => d.habitId === habitId && d.completed === true)
-      .map(d => d.date)
-      .sort();
-
-    if (habitEntries.length === 0) return 0;
-
     let currentStreak = 0;
     const today = new Date();
+    today.setHours(23, 59, 59, 999); // End of today
     
     // Start from today and work backwards
-    for (let i = 0; i < 365; i++) { // Check up to a year back
+    for (let i = 0; i < 365; i++) {
       const checkDate = new Date(today);
       checkDate.setDate(today.getDate() - i);
       const checkDateString = checkDate.toISOString().split('T')[0];
@@ -75,17 +69,15 @@ const Dashboard = ({ habits = [], streakData = [] }: DashboardProps) => {
         }
       }
       
-      // Check if completed on this day
-      const wasCompleted = habitEntries.includes(checkDateString);
+      // Check if completed on this day using the same logic as calendar
+      const completionEntry = streakData.find(d => d.habitId === habitId && d.date === checkDateString);
+      const wasCompleted = completionEntry?.completed === true;
       
       if (wasCompleted) {
         currentStreak++;
       } else {
-        // If we're checking today or yesterday and it's not completed, streak is broken
-        // But if it's a future date for weekly habits, we shouldn't break the streak
-        if (checkDate <= today) {
-          break;
-        }
+        // Break streak if not completed on a day when it should have been done
+        break;
       }
     }
 

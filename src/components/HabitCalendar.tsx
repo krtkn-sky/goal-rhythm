@@ -274,46 +274,22 @@ const HabitCalendar = ({
       return status === false; // Only count explicitly missed habits
     }).length;
     
-    // Debug logging for problematic dates
-    const debugDate = dateString === '2025-08-02' || dateString === '2025-08-03' || dateString === '2025-08-04';
-    if (debugDate) {
-      console.log(`=== DEBUG: Day ${dateString} (${dayOfWeek}) ===`);
-      console.log('Habits for this day:', habitsForThisDay.map(h => ({
-        id: h.id, 
-        name: h.name, 
-        frequency: h.frequency, 
-        weeklyDays: h.weeklyDays
-      })));
-      
-      const statusDetails = habitsForThisDay.map(habit => ({
-        id: habit.id,
-        name: habit.name,
-        status: getHabitStatusForDate(habit.id, dateString)
-      }));
-      console.log('Status details:', statusDetails);
-      console.log(`Completed: ${completedCount}/${habitsForThisDay.length}, Missed: ${missedCount}`);
-    }
-    
     // All habits are explicitly completed
     if (completedCount === habitsForThisDay.length) {
-      if (debugDate) console.log(`✅ RESULT: complete`);
       return 'complete';
     }
     
     // Some habits completed, some missed or untouched
     if (completedCount > 0) {
-      if (debugDate) console.log(`⚠️ RESULT: partial`);
       return 'partial';
     }
     
     // Some habits explicitly missed, none completed
     if (missedCount > 0) {
-      if (debugDate) console.log(`❌ RESULT: missed`);
       return 'missed';
     }
     
     // No interaction yet
-    if (debugDate) console.log(`🔹 RESULT: none`);
     return 'none';
   };
 
