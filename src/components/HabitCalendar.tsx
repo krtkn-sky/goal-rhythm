@@ -271,9 +271,14 @@ const HabitCalendar = ({
       return status === true; // Only count explicitly completed habits
     }).length;
     
-    const missedCount = habitsForThisDay.filter(habit => {
+    const incompletedCount = habitsForThisDay.filter(habit => {
       const status = getHabitStatusForDate(habit.id, dateString);
       return status === false; // Only count explicitly missed habits
+    }).length;
+    
+    const untouchedCount = habitsForThisDay.filter(habit => {
+      const status = getHabitStatusForDate(habit.id, dateString);
+      return status === undefined; // Count habits that haven't been interacted with
     }).length;
     
     // All habits are explicitly completed
@@ -281,13 +286,13 @@ const HabitCalendar = ({
       return 'complete';
     }
     
-    // Some habits completed, some missed or untouched
-    if (completedCount > 0) {
+    // Some habits completed, but others are incomplete or untouched
+    if (completedCount > 0 && (incompletedCount > 0 || untouchedCount > 0)) {
       return 'partial';
     }
     
     // Some habits explicitly missed, none completed
-    if (missedCount > 0) {
+    if (incompletedCount > 0 && completedCount === 0) {
       return 'missed';
     }
     
@@ -547,7 +552,73 @@ const HabitCalendar = ({
       <Card>
         <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-xl">{monthYear}</CardTitle>
+            <div className="flex flex-col gap-3">
+              <CardTitle className="text-xl">{monthYear}</CardTitle>
+              <div className="flex items-center gap-2">
+                {/* Habits Button - moved to left below month name */}
+                {selectedHabits.length > 0 && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setIsHabitsOverlayOpen(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <Target className="w-4 h-4" />
+                    Habits ({selectedHabits.length})
+                  </Button>
+                )}
+                
+                {/* Recycle Bin Button */}
+                {deletedHabits.length > 0 && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M3 6h18l-2 13H5L3 6z"/>
+                          <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                        Recycle Bin ({deletedHabits.length})
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-80">
+                      {deletedHabits.map((habit) => (
+                        <DropdownMenuItem 
+                          key={habit.id} 
+                          className="flex items-center justify-between cursor-pointer"
+                          onClick={(e) => e.preventDefault()}
+                        >
+                          <div className="flex items-center gap-2 flex-1">
+                            <span className="text-lg">{habit.icon}</span>
+                            <div className="flex flex-col">
+                              <span className="font-medium">{habit.name}</span>
+                              <span className="text-xs text-muted-foreground">
+                                Longest streak: {habit.longestStreak} days • Total: {habit.totalDays} days
+                              </span>
+                            </div>
+                          </div>
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={() => {
+                              if (onDeletedHabitsChange) {
+                                const restored = { ...habit };
+                                delete (restored as any).deletedAt;
+                                delete (restored as any).longestStreak;
+                                delete (restored as any).totalDays;
+                                onHabitsChange?.([...selectedHabits, restored]);
+                                onDeletedHabitsChange(deletedHabits.filter(h => h.id !== habit.id));
+                              }
+                            }}
+                          >
+                            Restore
+                          </Button>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </div>
+            </div>
             <div className="flex items-center gap-2">
               <Dialog open={isAddHabitOpen} onOpenChange={setIsAddHabitOpen}>
                 <DialogTrigger asChild>
@@ -641,19 +712,6 @@ const HabitCalendar = ({
         </CardHeader>
         
         <CardContent>
-          {/* Habits Button */}
-          {selectedHabits.length > 0 && (
-            <div className="flex justify-center mb-6">
-              <Button 
-                variant="outline" 
-                onClick={() => setIsHabitsOverlayOpen(true)}
-                className="flex items-center gap-2"
-              >
-                <Target className="w-4 h-4" />
-                Habits ({selectedHabits.length})
-              </Button>
-            </div>
-          )}
 
           {/* Calendar Grid */}
           <div className="grid grid-cols-7 gap-0 border border-border rounded-lg overflow-hidden">

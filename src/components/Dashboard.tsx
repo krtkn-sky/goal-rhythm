@@ -40,10 +40,10 @@ const Dashboard = ({ habits = [], streakData = [] }: DashboardProps) => {
     return habit.frequency === 'daily';
   });
 
-  // Calculate today's completion
+  // Calculate today's completion - only count explicitly completed habits
   const completedToday = habitsForToday.filter(habit => {
     const todayEntry = streakData.find(d => d.habitId === habit.id && d.date === todayString);
-    return todayEntry?.completed === true;
+    return todayEntry?.completed === true; // Only count explicitly true completions
   }).length;
 
   const todayProgress = habitsForToday.length > 0 ? (completedToday / habitsForToday.length) * 100 : 0;
