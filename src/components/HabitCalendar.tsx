@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { ChevronLeft, ChevronRight, Calendar, Target, Plus, X, ChevronDown, Check, Minus, List } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Target, Plus, X, ChevronDown, Check, Minus, List, Eye } from 'lucide-react';
+import HabitsOverlay from './HabitsOverlay';
 
 interface Habit {
   id: string;
@@ -74,6 +75,7 @@ const HabitCalendar = ({
   const [editHabitIcon, setEditHabitIcon] = useState('');
   const [editHabitFrequency, setEditHabitFrequency] = useState<'daily' | 'weekly'>('daily');
   const [editHabitWeeklyDays, setEditHabitWeeklyDays] = useState<number[]>([]);
+  const [isHabitsOverlayOpen, setIsHabitsOverlayOpen] = useState(false);
 
   const habitIcons = ['🎯', '💪', '📚', '🧘', '🏃', '💧', '🍎', '😴', '✍️', '🎨'];
   const habitColors = ['bg-primary', 'bg-success', 'bg-accent', 'bg-warning'];
@@ -639,35 +641,17 @@ const HabitCalendar = ({
         </CardHeader>
         
         <CardContent>
-          {/* Habits Legend */}
+          {/* Habits Button */}
           {selectedHabits.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-6">
-              {selectedHabits.map(habit => (
-                <div key={habit.id} className="relative">
-                  <Badge 
-                    variant="secondary" 
-                    className="text-sm pr-8 cursor-pointer hover:bg-muted-foreground/20 transition-colors"
-                    onClick={(e) => {
-                      if (!(e.target as HTMLElement).closest('button')) {
-                        openEditHabit(habit);
-                      }
-                    }}
-                  >
-                    <span className="mr-1">{habit.icon}</span>
-                    {habit.name}
-                  </Badge>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setHabitToDelete(habit.id);
-                    }}
-                    className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-xs hover:scale-110 transition-transform"
-                    title="Delete habit"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              ))}
+            <div className="flex justify-center mb-6">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsHabitsOverlayOpen(true)}
+                className="flex items-center gap-2"
+              >
+                <Target className="w-4 h-4" />
+                Habits ({selectedHabits.length})
+              </Button>
             </div>
           )}
 
@@ -831,6 +815,22 @@ const HabitCalendar = ({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Habits Overlay */}
+      <HabitsOverlay
+        isOpen={isHabitsOverlayOpen}
+        onClose={() => setIsHabitsOverlayOpen(false)}
+        habits={selectedHabits}
+        streakData={streakData}
+        onEditHabit={(habit) => {
+          setIsHabitsOverlayOpen(false);
+          openEditHabit(habit);
+        }}
+        onDeleteHabit={(habitId) => {
+          setIsHabitsOverlayOpen(false);
+          setHabitToDelete(habitId);
+        }}
+      />
     </div>
   );
 };

@@ -2,7 +2,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Calendar, Target, TrendingUp, Award, Flame, CheckCircle2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar, Target, TrendingUp, Award, Flame, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 
 interface Habit {
   id: string;
@@ -149,6 +151,7 @@ const Dashboard = ({ habits = [], streakData = [] }: DashboardProps) => {
   }));
 
   const bestStreak = Math.max(0, ...habitStats.map(h => h.longestStreak));
+  const bestStreakHabit = habitStats.find(h => h.longestStreak === bestStreak);
   const totalHabitsCompleted = streakData.filter(d => d.completed).length;
 
   return (
@@ -185,7 +188,32 @@ const Dashboard = ({ habits = [], streakData = [] }: DashboardProps) => {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Best Streak</CardTitle>
-            <Award className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-2">
+              {bestStreakHabit && bestStreak > 0 && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                      <Eye className="h-3 w-3" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{bestStreakHabit.icon}</span>
+                      <div>
+                        <p className="font-medium">{bestStreakHabit.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {bestStreakHabit.frequency === 'weekly' ? 
+                            `${bestStreakHabit.weeklyDays?.length || 0} days/week` : 
+                            'Daily'
+                          }
+                        </p>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
+              <Award className="h-4 w-4 text-muted-foreground" />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-foreground">{bestStreak}</div>
