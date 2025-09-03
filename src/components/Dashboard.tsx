@@ -208,6 +208,53 @@ const Dashboard = ({
     return achievements.slice(0, 6); // Show max 6 achievements
   };
 
+  // Calculate most missed habit
+  const getMostMissedHabit = () => {
+    if (habits.length === 0) return null;
+
+    const habitMissStats = habits.map(habit => {
+      const today = new Date();
+      const thirtyDaysAgo = new Date(today);
+      thirtyDaysAgo.setDate(today.getDate() - 30);
+      
+      let scheduledDays = 0;
+      let missedDays = 0;
+      
+      // Count scheduled and missed days in the last 30 days
+      for (let i = 0; i < 30; i++) {
+        const checkDate = new Date(thirtyDaysAgo);
+        checkDate.setDate(thirtyDaysAgo.getDate() + i);
+        const checkDateString = checkDate.toISOString().split('T')[0];
+        const checkDayOfWeek = checkDate.getDay();
+        
+        // Skip if this habit shouldn't be done on this day
+        if (habit.frequency === 'weekly' && habit.weeklyDays) {
+          if (!habit.weeklyDays.includes(checkDayOfWeek)) {
+            continue;
+          }
+        }
+        
+        scheduledDays++;
+        
+        // Check if missed (explicitly marked as false or not completed)
+        const completionEntry = streakData.find(d => d.habitId === habit.id && d.date === checkDateString);
+        if (!completionEntry || completionEntry.completed === false) {
+          missedDays++;
+        }
+      }
+      
+      const missRate = scheduledDays > 0 ? Math.round((missedDays / scheduledDays) * 100) : 0;
+      return { ...habit, missRate, missedDays, scheduledDays };
+    });
+
+    // Return habit with highest miss rate (minimum 3 missed days to be significant)
+    const mostMissed = habitMissStats
+      .filter(h => h.missedDays >= 3)
+      .sort((a, b) => b.missRate - a.missRate)[0];
+    
+    return mostMissed || null;
+  };
+
   const achievements = getAchievements();
 
   return (
@@ -281,13 +328,37 @@ const Dashboard = ({
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Habits</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Missed Often</CardTitle>
+            <div className="flex items-center gap-2">
+              {getMostMissedHabit() && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                      <Eye className="h-3 w-3" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{getMostMissedHabit()?.icon}</span>
+                      <div>
+                        <p className="font-medium">{getMostMissedHabit()?.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {getMostMissedHabit()?.missRate}% missed
+                        </p>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
+              <Target className="h-4 w-4 text-muted-foreground" />
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">{habits.length}</div>
+            <div className="text-2xl font-bold text-foreground">
+              {getMostMissedHabit()?.missRate || 0}%
+            </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Active habits
+              {getMostMissedHabit()?.name || 'No habit'} miss rate
             </p>
           </CardContent>
         </Card>
@@ -349,58 +420,56 @@ const Dashboard = ({
       {deletedHabits.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Trash2 className="w-5 h-5 text-muted-foreground" />
-              Recycle Bin
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Trash2 className="w-5 h-5 text-muted-foreground" />
+                Recycle Bin
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onDeleteAllHabits}
+                className="text-destructive hover:text-destructive"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Empty Bin
+              </Button>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-end">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onDeleteAllHabits}
-                  className="text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Empty Bin
-                </Button>
-              </div>
-              <div className="space-y-3">
-                {deletedHabits.map(habit => (
-                  <div key={`${habit.id}-${habit.deletedAt}`} className="flex items-center justify-between p-3 rounded-lg border border-dashed">
-                    <div className="flex items-center gap-3">
-                      <span className="text-lg opacity-60">{habit.icon}</span>
-                      <div>
-                        <div className="font-medium text-muted-foreground">{habit.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {habit.longestStreak} day streak • {habit.totalDays} total completions
-                        </div>
+            <div className="grid gap-3">
+              {deletedHabits.map(habit => (
+                <div key={`${habit.id}-${habit.deletedAt}`} className="flex items-center justify-between p-3 rounded-lg border border-dashed">
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg opacity-60">{habit.icon}</span>
+                    <div>
+                      <div className="font-medium text-muted-foreground">{habit.name}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {habit.longestStreak} day streak • {habit.totalDays} total completions
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onRestoreHabit?.(habit)}
-                        className="text-success hover:text-success"
-                      >
-                        <RotateCcw className="w-4 h-4 mr-2" />
-                        Restore
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onPermanentlyDeleteHabit?.(habit.id)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
                   </div>
-                ))}
-              </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onRestoreHabit?.(habit)}
+                      className="text-success hover:text-success"
+                    >
+                      <RotateCcw className="w-4 h-4 mr-2" />
+                      Restore
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onPermanentlyDeleteHabit?.(habit.id)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>

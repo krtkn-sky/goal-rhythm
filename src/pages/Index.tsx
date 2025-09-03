@@ -4,10 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import HabitCalendar from '@/components/HabitCalendar';
 import Dashboard from '@/components/Dashboard';
+import TaskSection from '@/components/TaskSection';
 import { useAuth } from '@/hooks/useAuth';
 import { useHabits } from '@/hooks/useHabits';
+import { useTasks } from '@/hooks/useTasks';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { Calendar, BarChart3, User, Sparkles, LogOut } from 'lucide-react';
+import { Calendar, BarChart3, CheckSquare, User, Sparkles, LogOut } from 'lucide-react';
 
 interface Habit {
   id: string;
@@ -55,6 +57,13 @@ const Index = () => {
     restoreHabit: restoreHabitDB,
     toggleHabitCompletion
   } = useHabits();
+  const { 
+    tasks, 
+    loading: tasksLoading,
+    addTask,
+    updateTask,
+    deleteTask
+  } = useTasks();
   const navigate = useNavigate();
 
 
@@ -79,7 +88,7 @@ const Index = () => {
     }
   };
 
-  if (loading || habitsLoading) {
+  if (loading || habitsLoading || tasksLoading) {
     return (
       <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
         <div className="text-center">
@@ -133,7 +142,7 @@ const Index = () => {
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-6 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8">
+          <TabsList className="grid w-full max-w-lg mx-auto grid-cols-3 mb-8">
             <TabsTrigger value="calendar" className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
               Calendar
@@ -141,6 +150,10 @@ const Index = () => {
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4" />
               Dashboard
+            </TabsTrigger>
+            <TabsTrigger value="tasks" className="flex items-center gap-2">
+              <CheckSquare className="w-4 h-4" />
+              Tasks
             </TabsTrigger>
           </TabsList>
 
@@ -167,6 +180,26 @@ const Index = () => {
               onPermanentlyDeleteHabit={permanentlyDeleteHabit}
               onDeleteAllHabits={deleteAllHabits}
             />
+          </TabsContent>
+
+          <TabsContent value="tasks" className="mt-0">
+            {user ? (
+              <TaskSection 
+                tasks={tasks}
+                onAddTask={addTask}
+                onUpdateTask={updateTask}
+                onDeleteTask={deleteTask}
+              />
+            ) : (
+              <div className="text-center py-12">
+                <CheckSquare className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-30" />
+                <h3 className="text-lg font-semibold mb-2">Sign in to manage tasks</h3>
+                <p className="text-muted-foreground mb-4">Create and track your daily tasks and meetings</p>
+                <Button onClick={() => navigate('/auth')}>
+                  Sign Up / Login
+                </Button>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>

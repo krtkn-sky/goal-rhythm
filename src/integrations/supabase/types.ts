@@ -118,6 +118,51 @@ export type Database = {
         }
         Relationships: []
       }
+      tasks: {
+        Row: {
+          completed: boolean
+          created_at: string
+          date: string
+          details: string | null
+          id: string
+          is_all_day: boolean
+          link: string | null
+          location: string | null
+          name: string
+          time: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          date: string
+          details?: string | null
+          id?: string
+          is_all_day?: boolean
+          link?: string | null
+          location?: string | null
+          name: string
+          time?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          date?: string
+          details?: string | null
+          id?: string
+          is_all_day?: boolean
+          link?: string | null
+          location?: string | null
+          name?: string
+          time?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
