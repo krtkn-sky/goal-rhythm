@@ -161,7 +161,11 @@ const Index = () => {
           <TabsContent value="dashboard" className="mt-0">
             <Dashboard 
               habits={habits} 
-              streakData={streakData} 
+              streakData={streakData}
+              deletedHabits={deletedHabits}
+              onRestoreHabit={restoreHabit}
+              onPermanentlyDeleteHabit={permanentlyDeleteHabit}
+              onDeleteAllHabits={deleteAllHabits}
             />
           </TabsContent>
         </Tabs>

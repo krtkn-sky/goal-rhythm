@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar, Target, TrendingUp, Award, Flame, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { Calendar, Target, TrendingUp, Award, Flame, CheckCircle2, Eye, Trash2, RotateCcw, Trophy, Medal, Zap, Star } from 'lucide-react';
 
 interface Habit {
   id: string;
@@ -22,12 +22,36 @@ interface StreakData {
   completed: boolean;
 }
 
+interface DeletedHabit {
+  id: string;
+  name: string;
+  color: string;
+  icon: string;
+  createdAt: string;
+  deletedAt: string;
+  longestStreak: number;
+  totalDays: number;
+  frequency?: 'daily' | 'weekly';
+  weeklyDays?: number[];
+}
+
 interface DashboardProps {
   habits?: Habit[];
   streakData?: StreakData[];
+  deletedHabits?: DeletedHabit[];
+  onRestoreHabit?: (habit: DeletedHabit) => void;
+  onPermanentlyDeleteHabit?: (habitId: string) => void;
+  onDeleteAllHabits?: () => void;
 }
 
-const Dashboard = ({ habits = [], streakData = [] }: DashboardProps) => {
+const Dashboard = ({ 
+  habits = [], 
+  streakData = [], 
+  deletedHabits = [],
+  onRestoreHabit,
+  onPermanentlyDeleteHabit,
+  onDeleteAllHabits
+}: DashboardProps) => {
   const today = new Date();
   const todayString = today.toISOString().split('T')[0];
   const dayOfWeek = today.getDay();
@@ -154,6 +178,38 @@ const Dashboard = ({ habits = [], streakData = [] }: DashboardProps) => {
   const bestStreakHabit = habitStats.find(h => h.longestStreak === bestStreak);
   const totalHabitsCompleted = streakData.filter(d => d.completed).length;
 
+  // Calculate achievements
+  const getAchievements = () => {
+    const achievements = [];
+    
+    // Streak milestones
+    if (bestStreak >= 7) achievements.push({ icon: '🔥', title: 'Week Warrior', description: `${bestStreak} day streak!`, unlocked: true });
+    if (bestStreak >= 30) achievements.push({ icon: '🏆', title: 'Monthly Master', description: `${bestStreak} day streak!`, unlocked: true });
+    if (bestStreak >= 100) achievements.push({ icon: '💎', title: 'Century Champion', description: `${bestStreak} day streak!`, unlocked: true });
+    
+    // Completion milestones
+    if (totalHabitsCompleted >= 50) achievements.push({ icon: '⭐', title: 'Half Century', description: '50+ completions!', unlocked: true });
+    if (totalHabitsCompleted >= 100) achievements.push({ icon: '🌟', title: 'Centurion', description: '100+ completions!', unlocked: true });
+    if (totalHabitsCompleted >= 365) achievements.push({ icon: '👑', title: 'Year Champion', description: '365+ completions!', unlocked: true });
+    
+    // Habit variety
+    if (habits.length >= 5) achievements.push({ icon: '🎯', title: 'Multitasker', description: '5+ active habits!', unlocked: true });
+    if (habits.length >= 10) achievements.push({ icon: '🚀', title: 'Habit Master', description: '10+ active habits!', unlocked: true });
+    
+    // Perfect days
+    const perfectDays = Array.from(new Set(streakData.filter(d => d.completed).map(d => d.date))).length;
+    if (perfectDays >= 7) achievements.push({ icon: '💫', title: 'Perfectionist', description: `${perfectDays} perfect days!`, unlocked: true });
+    
+    // Add some locked achievements for motivation
+    if (bestStreak < 7) achievements.push({ icon: '🔥', title: 'Week Warrior', description: 'Get a 7-day streak', unlocked: false });
+    if (bestStreak < 30) achievements.push({ icon: '🏆', title: 'Monthly Master', description: 'Get a 30-day streak', unlocked: false });
+    if (totalHabitsCompleted < 100) achievements.push({ icon: '🌟', title: 'Centurion', description: 'Complete 100 habits', unlocked: false });
+    
+    return achievements.slice(0, 6); // Show max 6 achievements
+  };
+
+  const achievements = getAchievements();
+
   return (
     <div className="w-full max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
       {/* Header */}
@@ -250,51 +306,101 @@ const Dashboard = ({ habits = [], streakData = [] }: DashboardProps) => {
         </Card>
       </div>
 
-      {/* Current Streaks */}
-      {habitStats.length > 0 && (
+      {/* Achievements */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="w-5 h-5 text-yellow-500" />
+            Achievements
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {achievements.map((achievement, index) => (
+              <div 
+                key={index} 
+                className={`p-4 rounded-lg border transition-all ${
+                  achievement.unlocked 
+                    ? 'bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200 dark:from-yellow-900/20 dark:to-orange-900/20 dark:border-yellow-800' 
+                    : 'bg-muted/30 border-muted opacity-60'
+                }`}
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-2xl">{achievement.icon}</span>
+                  <div className="flex-1">
+                    <h3 className={`font-semibold ${achievement.unlocked ? 'text-foreground' : 'text-muted-foreground'}`}>
+                      {achievement.title}
+                    </h3>
+                    <p className={`text-sm ${achievement.unlocked ? 'text-muted-foreground' : 'text-muted-foreground/70'}`}>
+                      {achievement.description}
+                    </p>
+                  </div>
+                  {achievement.unlocked && (
+                    <Medal className="w-5 h-5 text-yellow-600" />
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Recycle Bin */}
+      {deletedHabits.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Flame className="w-5 h-5 text-orange-500" />
-              Current Streaks
+              <Trash2 className="w-5 h-5 text-muted-foreground" />
+              Recycle Bin
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {habitStats
-                .filter(habit => habit.currentStreak > 0)
-                .sort((a, b) => b.currentStreak - a.currentStreak)
-                .map(habit => (
-                <div key={habit.id} className="flex items-center justify-between p-3 rounded-lg border">
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg">{habit.icon}</span>
-                    <div>
-                      <div className="font-medium text-foreground">{habit.name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {habit.frequency === 'weekly' ? 
-                          `${habit.weeklyDays?.length || 0} days/week` : 
-                          'Daily'
-                        }
+            <div className="space-y-4">
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onDeleteAllHabits}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Empty Bin
+                </Button>
+              </div>
+              <div className="space-y-3">
+                {deletedHabits.map(habit => (
+                  <div key={`${habit.id}-${habit.deletedAt}`} className="flex items-center justify-between p-3 rounded-lg border border-dashed">
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg opacity-60">{habit.icon}</span>
+                      <div>
+                        <div className="font-medium text-muted-foreground">{habit.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {habit.longestStreak} day streak • {habit.totalDays} total completions
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xl font-bold text-foreground">
-                      {habit.currentStreak}
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onRestoreHabit?.(habit)}
+                        className="text-success hover:text-success"
+                      >
+                        <RotateCcw className="w-4 h-4 mr-2" />
+                        Restore
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onPermanentlyDeleteHabit?.(habit.id)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      {habit.currentStreak === 1 ? 'day' : 'days'}
-                    </div>
                   </div>
-                </div>
-              ))}
-              {habitStats.filter(habit => habit.currentStreak > 0).length === 0 && (
-                <div className="text-center text-muted-foreground py-8">
-                  <Flame className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p>No active streaks yet</p>
-                  <p className="text-sm">Complete some habits to start building streaks!</p>
-                </div>
-              )}
+                ))}
+              </div>
             </div>
           </CardContent>
         </Card>

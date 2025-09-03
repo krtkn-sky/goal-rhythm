@@ -568,55 +568,6 @@ const HabitCalendar = ({
                   </Button>
                 )}
                 
-                {/* Recycle Bin Button */}
-                {deletedHabits.length > 0 && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm">
-                        <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M3 6h18l-2 13H5L3 6z"/>
-                          <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                        </svg>
-                        Recycle Bin ({deletedHabits.length})
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-80">
-                      {deletedHabits.map((habit) => (
-                        <DropdownMenuItem 
-                          key={habit.id} 
-                          className="flex items-center justify-between cursor-pointer"
-                          onClick={(e) => e.preventDefault()}
-                        >
-                          <div className="flex items-center gap-2 flex-1">
-                            <span className="text-lg">{habit.icon}</span>
-                            <div className="flex flex-col">
-                              <span className="font-medium">{habit.name}</span>
-                              <span className="text-xs text-muted-foreground">
-                                Longest streak: {habit.longestStreak} days • Total: {habit.totalDays} days
-                              </span>
-                            </div>
-                          </div>
-                          <Button 
-                            size="sm" 
-                            variant="ghost"
-                            onClick={() => {
-                              if (onDeletedHabitsChange) {
-                                const restored = { ...habit };
-                                delete (restored as any).deletedAt;
-                                delete (restored as any).longestStreak;
-                                delete (restored as any).totalDays;
-                                onHabitsChange?.([...selectedHabits, restored]);
-                                onDeletedHabitsChange(deletedHabits.filter(h => h.id !== habit.id));
-                              }
-                            }}
-                          >
-                            Restore
-                          </Button>
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
               </div>
             </div>
             <div className="flex items-center gap-2">
