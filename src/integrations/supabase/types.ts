@@ -54,6 +54,7 @@ export type Database = {
           color: string
           created_at: string | null
           deleted_at: string | null
+          difficulty: string | null
           frequency: string | null
           icon: string
           id: string
@@ -67,6 +68,7 @@ export type Database = {
           color: string
           created_at?: string | null
           deleted_at?: string | null
+          difficulty?: string | null
           frequency?: string | null
           icon: string
           id?: string
@@ -80,6 +82,7 @@ export type Database = {
           color?: string
           created_at?: string | null
           deleted_at?: string | null
+          difficulty?: string | null
           frequency?: string | null
           icon?: string
           id?: string

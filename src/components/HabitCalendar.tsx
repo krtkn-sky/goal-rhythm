@@ -9,8 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { ChevronLeft, ChevronRight, Calendar, Target, Plus, X, ChevronDown, Check, Minus, List, Eye } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Target, Plus, X, ChevronDown, Check, Minus, List, Eye, CheckSquare } from 'lucide-react';
 import HabitsOverlay from './HabitsOverlay';
+import TaskDialog from './TaskDialog';
+import { Task } from '@/hooks/useTasks';
 
 interface Habit {
   id: string;
@@ -20,6 +22,7 @@ interface Habit {
   createdAt: string;
   frequency?: 'daily' | 'weekly';
   weeklyDays?: number[]; // 0-6 for Sunday-Saturday
+  difficulty?: 'easy' | 'medium' | 'hard';
 }
 
 interface StreakData {
@@ -38,24 +41,32 @@ interface HabitCalendarProps {
   habits?: Habit[];
   streakData?: StreakData[];
   deletedHabits?: DeletedHabit[];
+  tasks?: Task[];
   onHabitsChange?: (habits: Habit[]) => void;
   onStreakDataChange?: (data: StreakData[]) => void;
   onDeletedHabitsChange?: (deleted: DeletedHabit[]) => void;
   onAddHabit?: (habit: Omit<Habit, 'id'>) => void;
   onDeleteHabit?: (habitId: string) => void;
   onToggleCompletion?: (habitId: string, date: string, completed?: boolean) => void;
+  onAddTask?: (task: Omit<Task, 'id' | 'createdAt'>) => void;
+  onUpdateTask?: (task: Task) => void;
+  onDeleteTask?: (taskId: string) => void;
 }
 
 const HabitCalendar = ({ 
   habits: externalHabits = [], 
   streakData: externalStreakData = [], 
   deletedHabits: externalDeletedHabits = [],
+  tasks = [],
   onHabitsChange, 
   onStreakDataChange, 
   onDeletedHabitsChange,
   onAddHabit,
   onDeleteHabit,
-  onToggleCompletion
+  onToggleCompletion,
+  onAddTask,
+  onUpdateTask,
+  onDeleteTask
 }: HabitCalendarProps) => {
   const today = new Date();
   const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
@@ -69,15 +80,16 @@ const HabitCalendar = ({
   const [newHabitIcon, setNewHabitIcon] = useState('🎯');
   const [newHabitFrequency, setNewHabitFrequency] = useState<'daily' | 'weekly'>('daily');
   const [newHabitWeeklyDays, setNewHabitWeeklyDays] = useState<number[]>([]);
+  const [newHabitDifficulty, setNewHabitDifficulty] = useState<'easy' | 'medium' | 'hard'>('easy');
   const [habitToDelete, setHabitToDelete] = useState<string | null>(null);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [editHabitName, setEditHabitName] = useState('');
   const [editHabitIcon, setEditHabitIcon] = useState('');
   const [editHabitFrequency, setEditHabitFrequency] = useState<'daily' | 'weekly'>('daily');
   const [editHabitWeeklyDays, setEditHabitWeeklyDays] = useState<number[]>([]);
+  const [editHabitDifficulty, setEditHabitDifficulty] = useState<'easy' | 'medium' | 'hard'>('easy');
   const [isHabitsOverlayOpen, setIsHabitsOverlayOpen] = useState(false);
 
-  const habitIcons = ['🎯', '💪', '📚', '🧘', '🏃', '💧', '🍎', '😴', '✍️', '🎨'];
   const habitColors = ['bg-primary', 'bg-success', 'bg-accent', 'bg-warning'];
 
   const getDaysInMonth = (date: Date) => {
@@ -112,7 +124,8 @@ const HabitCalendar = ({
         icon: newHabitIcon,
         createdAt: new Date().toISOString(),
         frequency: newHabitFrequency,
-        weeklyDays: newHabitFrequency === 'weekly' ? newHabitWeeklyDays : undefined
+        weeklyDays: newHabitFrequency === 'weekly' ? newHabitWeeklyDays : undefined,
+        difficulty: newHabitDifficulty
       };
       
       if (onAddHabit) {
@@ -128,6 +141,7 @@ const HabitCalendar = ({
       setNewHabitIcon('🎯');
       setNewHabitFrequency('daily');
       setNewHabitWeeklyDays([]);
+      setNewHabitDifficulty('easy');
       setIsAddHabitOpen(false);
     }
   };
@@ -202,6 +216,7 @@ const HabitCalendar = ({
     setEditHabitIcon(habit.icon);
     setEditHabitFrequency(habit.frequency || 'daily');
     setEditHabitWeeklyDays(habit.weeklyDays || []);
+    setEditHabitDifficulty(habit.difficulty || 'easy');
   };
 
   const saveEditHabit = () => {
@@ -211,7 +226,8 @@ const HabitCalendar = ({
         name: editHabitName.trim(),
         icon: editHabitIcon,
         frequency: editHabitFrequency,
-        weeklyDays: editHabitFrequency === 'weekly' ? editHabitWeeklyDays : undefined
+        weeklyDays: editHabitFrequency === 'weekly' ? editHabitWeeklyDays : undefined,
+        difficulty: editHabitDifficulty
       };
       const updatedHabits = selectedHabits.map(h => h.id === editingHabit.id ? updatedHabit : h);
       onHabitsChange?.(updatedHabits);
@@ -345,44 +361,6 @@ const HabitCalendar = ({
     });
   };
 
-  const renderMiniCalendarDays = () => {
-    const daysInMonth = getDaysInMonth(currentDate);
-    const firstDay = getFirstDayOfMonth(currentDate);
-    const days = [];
-    const today = new Date();
-    const todayString = formatDate(today);
-
-    // Empty cells for previous month
-    for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="h-8 border border-border/20"></div>);
-    }
-
-    // Calendar days
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-      const dateString = formatDate(date);
-      const todayDate = new Date();
-      const isToday = date.getDate() === todayDate.getDate() && 
-                      date.getMonth() === todayDate.getMonth() && 
-                      date.getFullYear() === todayDate.getFullYear();
-
-      days.push(
-        <div
-          key={day}
-          className={`h-8 border flex items-center justify-center text-xs transition-colors ${
-            isToday 
-              ? 'bg-primary/10 text-primary border-primary border-2 font-bold' 
-              : 'border-border/20 bg-card text-muted-foreground hover:bg-muted/50'
-          }`}
-        >
-          {day}
-        </div>
-      );
-    }
-
-    return days;
-  };
-
   const renderCalendarDays = () => {
     const daysInMonth = getDaysInMonth(currentDate);
     const firstDay = getFirstDayOfMonth(currentDate);
@@ -450,11 +428,19 @@ const HabitCalendar = ({
                 <DropdownMenuContent className="w-64 bg-popover border border-border shadow-lg z-50">
                   {habitsForThisDay.map(habit => {
                     const status = getHabitStatusForDate(habit.id, dateString);
+                    const difficultyColors = {
+                      easy: 'bg-green-100 text-green-800',
+                      medium: 'bg-yellow-100 text-yellow-800', 
+                      hard: 'bg-red-100 text-red-800'
+                    };
                     return (
                       <div key={habit.id} className="p-2 border-b border-border/50 last:border-b-0">
                         <div className="flex items-center gap-2 mb-2">
                           <span className="text-lg">{habit.icon}</span>
                           <span className="font-medium text-sm flex-1">{habit.name}</span>
+                          <Badge variant="secondary" className={`text-xs ${difficultyColors[habit.difficulty || 'easy']}`}>
+                            {habit.difficulty || 'easy'}
+                          </Badge>
                           <div className={`w-2 h-2 rounded-full ${
                             status === true ? 'bg-success' : status === false ? 'bg-destructive' : 'bg-muted-foreground'
                           }`} />
@@ -496,7 +482,6 @@ const HabitCalendar = ({
               </DropdownMenu>
             );
           })()}
-          
         </div>
       );
     }
@@ -509,7 +494,29 @@ const HabitCalendar = ({
     year: 'numeric' 
   });
 
-  // Always show calendar - if no habits, show the same calendar but with Add Habit button
+  // Calculate today's progress
+  const getTodaysProgress = () => {
+    const todayString = formatDate(new Date());
+    const date = new Date(todayString);
+    const dayOfWeek = date.getDay();
+    
+    // Get habits that should be tracked for today
+    const habitsForToday = selectedHabits.filter(habit => {
+      if (habit.frequency === 'weekly' && habit.weeklyDays) {
+        return habit.weeklyDays.includes(dayOfWeek);
+      }
+      return habit.frequency === 'daily';
+    });
+    
+    const completedToday = habitsForToday.filter(habit => {
+      const status = getHabitStatusForDate(habit.id, todayString);
+      return status === true;
+    }).length;
+    
+    return { completed: completedToday, total: habitsForToday.length };
+  };
+
+  const todaysProgress = getTodaysProgress();
 
   return (
     <div className="w-full max-w-6xl mx-auto p-4 sm:p-6 space-y-6">
@@ -524,7 +531,7 @@ const HabitCalendar = ({
             <p className="text-muted-foreground">
               {selectedHabits.length === 0 
                 ? "Add your first habit to start tracking your journey" 
-                : "Track your journey, celebrate your progress"
+                : `Today's progress: ${todaysProgress.completed}/${todaysProgress.total}`
               }
             </p>
           </div>
@@ -555,7 +562,117 @@ const HabitCalendar = ({
             <div className="flex flex-col gap-3">
               <CardTitle className="text-xl">{monthYear}</CardTitle>
               <div className="flex items-center gap-2">
-                {/* Habits Button - moved to left below month name */}
+                {/* Add Habit Button */}
+                <Dialog open={isAddHabitOpen} onOpenChange={setIsAddHabitOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Habit
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Add New Habit</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="habit-name">Habit Name</Label>
+                        <Input
+                          id="habit-name"
+                          value={newHabitName}
+                          onChange={(e) => setNewHabitName(e.target.value)}
+                          placeholder="e.g., Morning Exercise"
+                          className="mt-1"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label>Frequency</Label>
+                        <Select value={newHabitFrequency} onValueChange={(value: 'daily' | 'weekly') => setNewHabitFrequency(value)}>
+                          <SelectTrigger className="mt-1">
+                            <SelectValue placeholder="Select frequency" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="daily">Every day</SelectItem>
+                            <SelectItem value="weekly">Specific days of the week</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {newHabitFrequency === 'weekly' && (
+                        <div>
+                          <Label>Select Days</Label>
+                          <div className="grid grid-cols-7 gap-2 mt-2">
+                            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
+                              <div key={day} className="flex flex-col items-center gap-1">
+                                <Checkbox
+                                  id={`day-${index}`}
+                                  checked={newHabitWeeklyDays.includes(index)}
+                                  onCheckedChange={() => toggleWeeklyDay(index)}
+                                />
+                                <Label htmlFor={`day-${index}`} className="text-xs">{day}</Label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div>
+                        <Label>Difficulty</Label>
+                        <Select value={newHabitDifficulty} onValueChange={(value: 'easy' | 'medium' | 'hard') => setNewHabitDifficulty(value)}>
+                          <SelectTrigger className="mt-1">
+                            <SelectValue placeholder="Select difficulty" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="easy">Easy (1 point)</SelectItem>
+                            <SelectItem value="medium">Medium (2 points)</SelectItem>
+                            <SelectItem value="hard">Hard (3 points)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div>
+                        <Label>Choose Icon</Label>
+                        <div className="mt-2">
+                          <Input
+                            value={newHabitIcon}
+                            onChange={(e) => setNewHabitIcon(e.target.value)}
+                            placeholder="Type or paste any emoji 🎯"
+                            className="text-center text-lg"
+                          />
+                          <p className="text-xs text-muted-foreground mt-1 text-center">
+                            Use your device's emoji keyboard or paste any emoji
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <Button 
+                          onClick={addNewHabit} 
+                          className="flex-1"
+                          disabled={!newHabitName.trim() || (newHabitFrequency === 'weekly' && newHabitWeeklyDays.length === 0)}
+                        >
+                          Add Habit
+                        </Button>
+                        <Button variant="outline" onClick={() => setIsAddHabitOpen(false)}>
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+                {/* Add Task Button */}
+                {onAddTask && (
+                  <TaskDialog onAddTask={onAddTask} trigger={
+                    <Button variant="outline" size="sm">
+                      <CheckSquare className="w-4 h-4 mr-2" />
+                      Add Task
+                    </Button>
+                  } />
+                )}
+
+                {/* Habits Button - show if there are habits */}
                 {selectedHabits.length > 0 && (
                   <Button 
                     variant="outline" 
@@ -573,7 +690,6 @@ const HabitCalendar = ({
         </CardHeader>
         
         <CardContent>
-
           {/* Calendar Grid */}
           <div className="grid grid-cols-7 gap-0 border border-border rounded-lg overflow-hidden">
             {/* Day headers */}
@@ -588,8 +704,6 @@ const HabitCalendar = ({
               const daysInMonth = getDaysInMonth(currentDate);
               const firstDay = getFirstDayOfMonth(currentDate);
               const days = [];
-              const today = new Date();
-              const todayString = formatDate(today);
 
               // Empty cells for previous month
               for (let i = 0; i < firstDay; i++) {
@@ -700,25 +814,36 @@ const HabitCalendar = ({
                 </div>
               </div>
             )}
+
+            <div>
+              <Label>Difficulty</Label>
+              <Select value={editHabitDifficulty} onValueChange={(value: 'easy' | 'medium' | 'hard') => setEditHabitDifficulty(value)}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select difficulty" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="easy">Easy (1 point)</SelectItem>
+                  <SelectItem value="medium">Medium (2 points)</SelectItem>
+                  <SelectItem value="hard">Hard (3 points)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             
             <div>
               <Label>Choose Icon</Label>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {habitIcons.map(icon => (
-                  <button
-                    key={icon}
-                    onClick={() => setEditHabitIcon(icon)}
-                    className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-all ${
-                      editHabitIcon === icon 
-                        ? 'bg-primary text-primary-foreground' 
-                        : 'bg-muted hover:bg-muted-foreground/20'
-                    }`}
-                  >
-                    {icon}
-                  </button>
-                ))}
+              <div className="mt-2">
+                <Input
+                  value={editHabitIcon}
+                  onChange={(e) => setEditHabitIcon(e.target.value)}
+                  placeholder="Type or paste any emoji 🎯"
+                  className="text-center text-lg"
+                />
+                <p className="text-xs text-muted-foreground mt-1 text-center">
+                  Use your device's emoji keyboard or paste any emoji
+                </p>
               </div>
             </div>
+            
             <div className="flex gap-2">
               <Button 
                 onClick={saveEditHabit} 

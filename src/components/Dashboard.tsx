@@ -39,6 +39,7 @@ interface DashboardProps {
   habits?: Habit[];
   streakData?: StreakData[];
   deletedHabits?: DeletedHabit[];
+  lifetimeScore?: number;
   onRestoreHabit?: (habit: DeletedHabit) => void;
   onPermanentlyDeleteHabit?: (habitId: string) => void;
   onDeleteAllHabits?: () => void;
@@ -48,6 +49,7 @@ const Dashboard = ({
   habits = [], 
   streakData = [], 
   deletedHabits = [],
+  lifetimeScore = 0,
   onRestoreHabit,
   onPermanentlyDeleteHabit,
   onDeleteAllHabits
@@ -178,32 +180,29 @@ const Dashboard = ({
   const bestStreakHabit = habitStats.find(h => h.longestStreak === bestStreak);
   const totalHabitsCompleted = streakData.filter(d => d.completed).length;
 
-  // Calculate achievements
+  // Calculate achievements based on score
   const getAchievements = () => {
     const achievements = [];
     
-    // Streak milestones
+    // Score milestones
+    if (lifetimeScore >= 10) achievements.push({ icon: '🥉', title: 'Bronze Scorer', description: '10+ points earned!', unlocked: true });
+    if (lifetimeScore >= 50) achievements.push({ icon: '🥈', title: 'Silver Scorer', description: '50+ points earned!', unlocked: true });
+    if (lifetimeScore >= 100) achievements.push({ icon: '🥇', title: 'Gold Scorer', description: '100+ points earned!', unlocked: true });
+    if (lifetimeScore >= 250) achievements.push({ icon: '💎', title: 'Diamond Scorer', description: '250+ points earned!', unlocked: true });
+    
+    // Streak achievements  
     if (bestStreak >= 7) achievements.push({ icon: '🔥', title: 'Week Warrior', description: `${bestStreak} day streak!`, unlocked: true });
     if (bestStreak >= 30) achievements.push({ icon: '🏆', title: 'Monthly Master', description: `${bestStreak} day streak!`, unlocked: true });
-    if (bestStreak >= 100) achievements.push({ icon: '💎', title: 'Century Champion', description: `${bestStreak} day streak!`, unlocked: true });
-    
-    // Completion milestones
-    if (totalHabitsCompleted >= 50) achievements.push({ icon: '⭐', title: 'Half Century', description: '50+ completions!', unlocked: true });
-    if (totalHabitsCompleted >= 100) achievements.push({ icon: '🌟', title: 'Centurion', description: '100+ completions!', unlocked: true });
-    if (totalHabitsCompleted >= 365) achievements.push({ icon: '👑', title: 'Year Champion', description: '365+ completions!', unlocked: true });
     
     // Habit variety
-    if (habits.length >= 5) achievements.push({ icon: '🎯', title: 'Multitasker', description: '5+ active habits!', unlocked: true });
-    if (habits.length >= 10) achievements.push({ icon: '🚀', title: 'Habit Master', description: '10+ active habits!', unlocked: true });
+    if (habits.length >= 3) achievements.push({ icon: '🎯', title: 'Multitasker', description: '3+ active habits!', unlocked: true });
+    if (habits.length >= 5) achievements.push({ icon: '🚀', title: 'Habit Master', description: '5+ active habits!', unlocked: true });
     
-    // Perfect days
-    const perfectDays = Array.from(new Set(streakData.filter(d => d.completed).map(d => d.date))).length;
-    if (perfectDays >= 7) achievements.push({ icon: '💫', title: 'Perfectionist', description: `${perfectDays} perfect days!`, unlocked: true });
-    
-    // Add some locked achievements for motivation
+    // Add locked achievements for motivation
+    if (lifetimeScore < 10) achievements.push({ icon: '🥉', title: 'Bronze Scorer', description: 'Earn 10 points', unlocked: false });
+    if (lifetimeScore < 50) achievements.push({ icon: '🥈', title: 'Silver Scorer', description: 'Earn 50 points', unlocked: false });
+    if (lifetimeScore < 100) achievements.push({ icon: '🥇', title: 'Gold Scorer', description: 'Earn 100 points', unlocked: false });
     if (bestStreak < 7) achievements.push({ icon: '🔥', title: 'Week Warrior', description: 'Get a 7-day streak', unlocked: false });
-    if (bestStreak < 30) achievements.push({ icon: '🏆', title: 'Monthly Master', description: 'Get a 30-day streak', unlocked: false });
-    if (totalHabitsCompleted < 100) achievements.push({ icon: '🌟', title: 'Centurion', description: 'Complete 100 habits', unlocked: false });
     
     return achievements.slice(0, 6); // Show max 6 achievements
   };
@@ -365,13 +364,13 @@ const Dashboard = ({
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Completions</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Lifetime Score</CardTitle>
             <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-foreground">{totalHabitsCompleted}</div>
+            <div className="text-2xl font-bold text-foreground">{lifetimeScore}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              All time
+              Total points earned
             </p>
           </CardContent>
         </Card>

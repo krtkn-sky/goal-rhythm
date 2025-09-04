@@ -10,6 +10,7 @@ export interface Habit {
   createdAt: string;
   frequency?: 'daily' | 'weekly';
   weeklyDays?: number[];
+  difficulty?: 'easy' | 'medium' | 'hard';
 }
 
 export interface StreakData {
@@ -29,6 +30,7 @@ export interface DeletedHabit {
   totalDays: number;
   frequency?: 'daily' | 'weekly';
   weeklyDays?: number[];
+  difficulty?: 'easy' | 'medium' | 'hard';
 }
 
 export const useHabits = () => {
@@ -93,7 +95,8 @@ export const useHabits = () => {
         icon: h.icon,
         createdAt: h.created_at,
         frequency: (h.frequency as 'daily' | 'weekly') || 'daily',
-        weeklyDays: h.weekly_days
+        weeklyDays: h.weekly_days,
+        difficulty: (h.difficulty as 'easy' | 'medium' | 'hard') || 'easy'
       })) || [];
 
       const transformedStreaks: StreakData[] = completionsData?.map(c => ({
@@ -111,6 +114,7 @@ export const useHabits = () => {
         deletedAt: h.deleted_at || new Date().toISOString(),
         frequency: (h.frequency as 'daily' | 'weekly') || 'daily',
         weeklyDays: h.weekly_days,
+        difficulty: (h.difficulty as 'easy' | 'medium' | 'hard') || 'easy',
         longestStreak: 0, // Calculate these if needed
         totalDays: 0
       })) || [];
@@ -138,6 +142,7 @@ export const useHabits = () => {
           icon: habit.icon,
           frequency: habit.frequency || 'daily',
           weekly_days: habit.weeklyDays,
+          difficulty: habit.difficulty || 'easy',
           created_at: habit.createdAt
         })
         .select()
@@ -152,7 +157,8 @@ export const useHabits = () => {
         icon: data.icon,
         createdAt: data.created_at,
         frequency: (data.frequency as 'daily' | 'weekly') || 'daily',
-        weeklyDays: data.weekly_days
+        weeklyDays: data.weekly_days,
+        difficulty: (data.difficulty as 'easy' | 'medium' | 'hard') || 'easy'
       };
 
       setHabits(prev => [...prev, newHabit]);
@@ -207,7 +213,8 @@ export const useHabits = () => {
           color: deletedHabit.color,
           icon: deletedHabit.icon,
           frequency: deletedHabit.frequency || 'daily',
-          weekly_days: deletedHabit.weeklyDays
+          weekly_days: deletedHabit.weeklyDays,
+          difficulty: deletedHabit.difficulty || 'easy'
         })
         .select()
         .single();
@@ -221,7 +228,8 @@ export const useHabits = () => {
         icon: data.icon,
         createdAt: data.created_at,
         frequency: (data.frequency as 'daily' | 'weekly') || 'daily',
-        weeklyDays: data.weekly_days
+        weeklyDays: data.weekly_days,
+        difficulty: (data.difficulty as 'easy' | 'medium' | 'hard') || 'easy'
       };
 
       setHabits(prev => [...prev, restoredHabit]);
@@ -278,17 +286,48 @@ export const useHabits = () => {
     }
   };
 
+  // Calculate score helper function
+  const getHabitPoints = (difficulty: 'easy' | 'medium' | 'hard' = 'easy') => {
+    switch (difficulty) {
+      case 'easy': return 1;
+      case 'medium': return 2;
+      case 'hard': return 3;
+      default: return 1;
+    }
+  };
+
+  // Calculate lifetime score
+  const calculateLifetimeScore = () => {
+    let score = 0;
+    
+    // Add points for completed habits
+    streakData.forEach(streak => {
+      const habit = habits.find(h => h.id === streak.habitId);
+      if (habit && streak.completed) {
+        score += getHabitPoints(habit.difficulty);
+      } else if (habit && streak.completed === false) {
+        score -= getHabitPoints(habit.difficulty);
+      }
+    });
+    
+    return Math.max(0, score); // Don't allow negative scores
+  };
+
+  const lifetimeScore = calculateLifetimeScore();
+
   return {
     habits,
     streakData,
     deletedHabits,
     loading,
+    lifetimeScore,
     setHabits,
     setStreakData,
     setDeletedHabits,
     addHabit,
     deleteHabit,
     restoreHabit,
-    toggleHabitCompletion
+    toggleHabitCompletion,
+    getHabitPoints
   };
 };

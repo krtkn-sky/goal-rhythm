@@ -49,6 +49,7 @@ const Index = () => {
     streakData, 
     deletedHabits, 
     loading: habitsLoading,
+    lifetimeScore,
     setHabits,
     setStreakData,
     setDeletedHabits,
@@ -142,7 +143,7 @@ const Index = () => {
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-6 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full max-w-lg mx-auto grid-cols-3 mb-8">
+          <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 mb-8">
             <TabsTrigger value="calendar" className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
               Calendar
@@ -151,10 +152,6 @@ const Index = () => {
               <BarChart3 className="w-4 h-4" />
               Dashboard
             </TabsTrigger>
-            <TabsTrigger value="tasks" className="flex items-center gap-2">
-              <CheckSquare className="w-4 h-4" />
-              Tasks
-            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="calendar" className="mt-0">
@@ -162,12 +159,16 @@ const Index = () => {
               habits={habits}
               streakData={streakData}
               deletedHabits={deletedHabits}
+              tasks={tasks}
               onHabitsChange={setHabits}
               onStreakDataChange={setStreakData}
               onDeletedHabitsChange={setDeletedHabits}
               onAddHabit={user ? addHabit : undefined}
               onDeleteHabit={user ? deleteHabitDB : undefined}
               onToggleCompletion={user ? (habitId, date, completed) => toggleHabitCompletion(habitId, date, completed) : undefined}
+              onAddTask={user ? addTask : undefined}
+              onUpdateTask={user ? (task) => updateTask(task.id, task) : undefined}
+              onDeleteTask={user ? deleteTask : undefined}
             />
           </TabsContent>
 
@@ -176,31 +177,13 @@ const Index = () => {
               habits={habits} 
               streakData={streakData}
               deletedHabits={deletedHabits}
+              lifetimeScore={lifetimeScore}
               onRestoreHabit={restoreHabit}
               onPermanentlyDeleteHabit={permanentlyDeleteHabit}
               onDeleteAllHabits={deleteAllHabits}
             />
           </TabsContent>
 
-          <TabsContent value="tasks" className="mt-0">
-            {user ? (
-              <TaskSection 
-                tasks={tasks}
-                onAddTask={addTask}
-                onUpdateTask={updateTask}
-                onDeleteTask={deleteTask}
-              />
-            ) : (
-              <div className="text-center py-12">
-                <CheckSquare className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-30" />
-                <h3 className="text-lg font-semibold mb-2">Sign in to manage tasks</h3>
-                <p className="text-muted-foreground mb-4">Create and track your daily tasks and meetings</p>
-                <Button onClick={() => navigate('/auth')}>
-                  Sign Up / Login
-                </Button>
-              </div>
-            )}
-          </TabsContent>
         </Tabs>
       </div>
     </div>
