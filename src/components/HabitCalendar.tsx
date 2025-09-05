@@ -403,28 +403,80 @@ const HabitCalendar = ({
           {/* Day completion indicator */}
           {!isFuture && dayStatus !== 'none' && renderDayIndicator(dayStatus)}
           
-          {/* Unified Dropdown for all habits - only show if there are habits for this day */}
-          {(() => {
-            const habitsForThisDay = selectedHabits.filter(habit => {
-              // For weekly habits, only show on designated days
-              if (habit.frequency === 'weekly' && habit.weeklyDays) {
-                return habit.weeklyDays.includes(dayOfWeek);
-              }
-              // For daily habits, show every day
-              return habit.frequency === 'daily';
-            });
-            
-            return habitsForThisDay.length > 0 && !isFuture && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="absolute top-1 right-1 w-4 h-4 sm:w-6 sm:h-6 p-0 opacity-60 hover:opacity-100"
-                  >
-                    <List className="w-2 h-2 sm:w-3 sm:h-3" />
-                  </Button>
-                </DropdownMenuTrigger>
+          {/* Habits and Tasks Dropdown */}
+          <div className="absolute top-1 right-1 flex flex-col gap-1">
+            {/* Task checklist button */}
+            {(() => {
+              const tasksForThisDay = tasks.filter(task => 
+                task.date === dateString && !task.completed
+              );
+              return tasksForThisDay.length > 0 && !isFuture && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-4 h-4 sm:w-6 sm:h-6 p-0 opacity-60 hover:opacity-100"
+                    >
+                      <CheckSquare className="w-2 h-2 sm:w-3 sm:h-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-64 bg-popover border border-border shadow-lg z-50">
+                    <div className="p-2 border-b border-border/50">
+                      <span className="text-sm font-medium">Pending Tasks</span>
+                    </div>
+                    {tasksForThisDay.map(task => (
+                      <div key={task.id} className="p-2 border-b border-border/50 last:border-b-0">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="font-medium text-sm flex-1">{task.name}</span>
+                          {task.time && (
+                            <Badge variant="secondary" className="text-xs">
+                              {task.time}
+                            </Badge>
+                          )}
+                        </div>
+                        {task.details && (
+                          <p className="text-xs text-muted-foreground mb-2">{task.details}</p>
+                        )}
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            onClick={() => onUpdateTask?.({...task, completed: true})}
+                            className="flex-1 h-7 text-xs"
+                          >
+                            <Check className="w-3 h-3 mr-1" />
+                            Complete
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              );
+            })()}
+
+            {/* Habits Dropdown */}
+            {(() => {
+              const habitsForThisDay = selectedHabits.filter(habit => {
+                // For weekly habits, only show on designated days
+                if (habit.frequency === 'weekly' && habit.weeklyDays) {
+                  return habit.weeklyDays.includes(dayOfWeek);
+                }
+                // For daily habits, show every day
+                return habit.frequency === 'daily';
+              });
+              
+              return habitsForThisDay.length > 0 && !isFuture && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-4 h-4 sm:w-6 sm:h-6 p-0 opacity-60 hover:opacity-100"
+                    >
+                      <List className="w-2 h-2 sm:w-3 sm:h-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-64 bg-popover border border-border shadow-lg z-50">
                   {habitsForThisDay.map(habit => {
                     const status = getHabitStatusForDate(habit.id, dateString);
@@ -478,10 +530,11 @@ const HabitCalendar = ({
                       </div>
                     );
                   })}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            );
-          })()}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              );
+            })()}
+          </div>
         </div>
       );
     }
@@ -513,14 +566,6 @@ const HabitCalendar = ({
       return status === true;
     }).length;
     
-    // Debug logging
-    console.log('Calendar Progress Debug:', {
-      todayString,
-      habitsForToday: habitsForToday.map(h => ({ id: h.id, name: h.name })),
-      streakDataToday: streakData.filter(d => d.date === todayString),
-      completedToday,
-      total: habitsForToday.length
-    });
     
     return { completed: completedToday, total: habitsForToday.length };
   };
@@ -570,7 +615,7 @@ const HabitCalendar = ({
           <div className="flex items-center justify-between">
             <div className="flex flex-col gap-3">
               <CardTitle className="text-xl">{monthYear}</CardTitle>
-              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2">
                 {/* Add Habit Button */}
                 <Dialog open={isAddHabitOpen} onOpenChange={setIsAddHabitOpen}>
                   <DialogTrigger asChild>

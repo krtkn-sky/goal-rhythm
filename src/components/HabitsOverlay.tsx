@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { X, Calendar, Target, Award, Flame, TrendingUp } from 'lucide-react';
+import { X, Calendar, Target, Award, Flame, TrendingUp, ChevronLeft } from 'lucide-react';
 
 interface Habit {
   id: string;
@@ -189,7 +189,7 @@ const HabitsOverlay = ({
                 </div>
               </div>
               <Button variant="ghost" size="sm" onClick={() => setSelectedHabit(null)}>
-                <X className="w-4 h-4" />
+                <ChevronLeft className="w-4 h-4" />
               </Button>
             </div>
 

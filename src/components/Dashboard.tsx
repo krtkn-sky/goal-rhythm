@@ -73,15 +73,6 @@ const Dashboard = ({
   }).length;
 
   const todayProgress = habitsForToday.length > 0 ? (completedToday / habitsForToday.length) * 100 : 0;
-  
-  // Debug logging
-  console.log('Dashboard Debug:', {
-    todayString,
-    habitsForToday: habitsForToday.map(h => ({ id: h.id, name: h.name })),
-    streakDataToday: streakData.filter(d => d.date === todayString),
-    completedToday,
-    todayProgress
-  });
 
   // Calculate current streaks for each habit using the same logic as calendar
   const calculateCurrentStreak = (habitId: string) => {

@@ -241,10 +241,58 @@ export const useHabits = () => {
     }
   };
 
+  const getHabitStatusForDate = (habitId: string, date: string): boolean | null => {
+    const streak = streakData.find(s => s.habitId === habitId && s.date === date);
+    return streak ? streak.completed : null;
+  };
+
   const toggleHabitCompletion = async (habitId: string, date: string, forceCompleted?: boolean) => {
     if (!user) return;
 
+    // Check if habit is locked (past date and not completed/missed)
+    const today = new Date().toISOString().split('T')[0];
+    // Check if the habit is in a past date that should be locked
+    const habit = habits.find(h => h.id === habitId);
+    if (!habit) return;
+    
+    const isLocked = date < today && getHabitStatusForDate(habitId, date) === null;
+    if (isLocked) {
+      // Auto-mark as missed for past unmarked dates
+      try {
+        await supabase
+          .from('habit_completions')
+          .insert({
+            user_id: user.id,
+            habit_id: habitId,
+            completed_date: date,
+            completed: false
+          });
+
+        setStreakData(prev => [
+          ...prev.filter(s => !(s.habitId === habitId && s.date === date)),
+          { habitId, date, completed: false }
+        ]);
+      } catch (error) {
+        console.error('Error auto-marking habit as missed:', error);
+      }
+      return;
+    }
+
     try {
+      // Update local state immediately for instant UI feedback
+      setStreakData(prev => {
+        // Remove any existing entry for this habit and date
+        const filtered = prev.filter(s => !(s.habitId === habitId && s.date === date));
+        
+        // If forceCompleted is undefined, this is a CLEAR action; don't add anything
+        if (forceCompleted === undefined) {
+          return filtered;
+        }
+        
+        // Add new entry with the specified completion state
+        return [...filtered, { habitId, date, completed: forceCompleted }];
+      });
+
       // Always try to delete any existing entry in DB first
       const { error: deleteError } = await supabase
         .from('habit_completions')
@@ -259,20 +307,6 @@ export const useHabits = () => {
           throw deleteError;
         }
       }
-
-      // Update local state immediately for instant UI feedback
-      setStreakData(prev => {
-        // Remove any existing entry for this habit and date
-        const filtered = prev.filter(s => !(s.habitId === habitId && s.date === date));
-        
-        // If forceCompleted is undefined, this is a CLEAR action; don't add anything
-        if (forceCompleted === undefined) {
-          return filtered;
-        }
-        
-        // Add new entry with the specified completion state
-        return [...filtered, { habitId, date, completed: forceCompleted }];
-      });
 
       // If forceCompleted is undefined, this is a CLEAR action; don't insert anything
       if (forceCompleted === undefined) {
@@ -326,6 +360,57 @@ export const useHabits = () => {
 
   const lifetimeScore = calculateLifetimeScore();
 
+  // Auto-mark habits as missed for past dates
+  const autoMarkMissedHabits = async () => {
+    if (!user) return;
+
+    const today = new Date().toISOString().split('T')[0];
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayString = yesterday.toISOString().split('T')[0];
+
+    // Find habits that should have been tracked yesterday but weren't
+    const habitsToMarkMissed = habits.filter(habit => {
+      const yesterdayDayOfWeek = yesterday.getDay();
+      const shouldTrack = habit.frequency === 'daily' || 
+                         (habit.frequency === 'weekly' && habit.weeklyDays?.includes(yesterdayDayOfWeek));
+      
+      if (!shouldTrack) return false;
+      
+      const status = getHabitStatusForDate(habit.id, yesterdayString);
+      return status === null; // Not completed or missed
+    });
+
+    // Mark them as missed in database
+    for (const habit of habitsToMarkMissed) {
+      try {
+        await supabase
+          .from('habit_completions')
+          .insert({
+            user_id: user.id,
+            habit_id: habit.id,
+            completed_date: yesterdayString,
+            completed: false
+          });
+
+        // Update local state
+        setStreakData(prev => [
+          ...prev.filter(s => !(s.habitId === habit.id && s.date === yesterdayString)),
+          { habitId: habit.id, date: yesterdayString, completed: false }
+        ]);
+      } catch (error) {
+        console.error('Error auto-marking habit as missed:', error);
+      }
+    }
+  };
+
+  // Auto-mark missed habits on component mount and daily
+  useEffect(() => {
+    if (user && habits.length > 0) {
+      autoMarkMissedHabits();
+    }
+  }, [user, habits]);
+
   return {
     habits,
     streakData,
@@ -339,6 +424,7 @@ export const useHabits = () => {
     deleteHabit,
     restoreHabit,
     toggleHabitCompletion,
-    getHabitPoints
+    getHabitPoints,
+    getHabitStatusForDate
   };
 };
