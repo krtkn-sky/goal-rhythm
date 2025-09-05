@@ -513,6 +513,15 @@ const HabitCalendar = ({
       return status === true;
     }).length;
     
+    // Debug logging
+    console.log('Calendar Progress Debug:', {
+      todayString,
+      habitsForToday: habitsForToday.map(h => ({ id: h.id, name: h.name })),
+      streakDataToday: streakData.filter(d => d.date === todayString),
+      completedToday,
+      total: habitsForToday.length
+    });
+    
     return { completed: completedToday, total: habitsForToday.length };
   };
 
