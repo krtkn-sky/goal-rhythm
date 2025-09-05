@@ -260,8 +260,19 @@ export const useHabits = () => {
         }
       }
 
-      // Update local state by removing any existing entry
-      setStreakData(prev => prev.filter(s => !(s.habitId === habitId && s.date === date)));
+      // Update local state immediately for instant UI feedback
+      setStreakData(prev => {
+        // Remove any existing entry for this habit and date
+        const filtered = prev.filter(s => !(s.habitId === habitId && s.date === date));
+        
+        // If forceCompleted is undefined, this is a CLEAR action; don't add anything
+        if (forceCompleted === undefined) {
+          return filtered;
+        }
+        
+        // Add new entry with the specified completion state
+        return [...filtered, { habitId, date, completed: forceCompleted }];
+      });
 
       // If forceCompleted is undefined, this is a CLEAR action; don't insert anything
       if (forceCompleted === undefined) {
@@ -279,10 +290,10 @@ export const useHabits = () => {
         });
       if (insertError) throw insertError;
 
-      // Update local state with new entry
-      setStreakData(prev => [...prev, { habitId, date, completed: forceCompleted }]);
     } catch (error) {
       console.error('Error toggling habit completion:', error);
+      // Reload data on error to ensure consistency
+      loadUserData();
     }
   };
 
